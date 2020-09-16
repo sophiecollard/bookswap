@@ -5,6 +5,7 @@ import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
+import com.github.sophiecollard.bookswap.domain.user.UserStatus.Admin
 import com.github.sophiecollard.bookswap.error.Error.NotAnAdminUser
 import com.github.sophiecollard.bookswap.repositories.{AuthorRepository, UserRepository}
 import com.github.sophiecollard.bookswap.service.authorization._
@@ -24,7 +25,7 @@ object AuthorService {
   ): AuthorizationService[F, Id[User]] =
     AuthorizationService.create[F, Id[User]] { userId =>
       userRepository.get(userId).map {
-        case Some(user) if user.isAdmin =>
+        case Some(User(_, _, Admin)) =>
           Right(())
         case _ =>
           Left(NotAnAdminUser(userId))
