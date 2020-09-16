@@ -11,6 +11,7 @@ import com.github.sophiecollard.bookswap.error.Error.{NoPermissionOnCopyRequest,
 import com.github.sophiecollard.bookswap.repositories.{CopyOnOfferRepository, CopyRequestRepository}
 import com.github.sophiecollard.bookswap.service.authorization._
 import com.github.sophiecollard.bookswap.syntax.MonadTransformerSyntax.OptionTSyntax
+import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
 trait CopyRequestHandler[F[_]] {
 
@@ -18,7 +19,7 @@ trait CopyRequestHandler[F[_]] {
 
   def rejectCopyRequest(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]]
 
-  def placeCopyRequestOnWaitingList(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]]
+  def putCopyRequestOnWaitingList(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]]
 
 }
 
@@ -46,15 +47,17 @@ object CopyRequestHandler {
 
   def create[F[_]: Applicative](
     authorizationService: AuthorizationService[F, AuthorizationInput],
-    repository: CopyOnOfferRepository[F]
+    copyRequestRepository: CopyRequestRepository[F],
+    copyOnOfferRepository: CopyOnOfferRepository[F]
+  )(
+    implicit zoneId: ZoneId // TODO Include in config object
   ): CopyRequestHandler[F] = {
-    val zoneId = ZoneId.of("UTC") // TODO pass in configuration
     new CopyRequestHandler[F] {
       override def acceptCopyRequest(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]] =
         authorizationService.authorize(AuthorizationInput(userId, requestId)) {
           // TODO implement
           RequestStatus
-            .accepted(LocalDateTime.now(zoneId))
+            .accepted(now)
             .asRight[TransactionError]
             .pure[F]
         }
@@ -63,16 +66,16 @@ object CopyRequestHandler {
         authorizationService.authorize(AuthorizationInput(userId, requestId)) {
           // TODO implement
           RequestStatus
-            .rejected(LocalDateTime.now(zoneId))
+            .rejected(now)
             .asRight[TransactionError]
             .pure[F]
         }
 
-      override def placeCopyRequestOnWaitingList(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]] =
+      override def putCopyRequestOnWaitingList(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]] =
         authorizationService.authorize(AuthorizationInput(userId, requestId)) {
           // TODO implement
           RequestStatus
-            .waitingList(1, LocalDateTime.now(zoneId))
+            .onWaitingList(now)
             .asRight[TransactionError]
             .pure[F]
         }

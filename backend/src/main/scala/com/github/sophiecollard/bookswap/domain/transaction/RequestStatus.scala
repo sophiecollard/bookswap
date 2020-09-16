@@ -10,16 +10,16 @@ sealed trait RequestStatus extends EnumEntry
 
 object RequestStatus extends Enum[RequestStatus] {
 
-  case object Pending                                                 extends RequestStatus
-  final case class Accepted(acceptedOn: LocalDateTime)                extends RequestStatus
-  final case class Rejected(rejectedOn: LocalDateTime)                extends RequestStatus
-  final case class WaitingList(position: Int, addedOn: LocalDateTime) extends RequestStatus
+  case object Pending                                    extends RequestStatus
+  final case class Accepted(acceptedOn: LocalDateTime)   extends RequestStatus
+  final case class Rejected(rejectedOn: LocalDateTime)   extends RequestStatus
+  final case class OnWaitingList(addedOn: LocalDateTime) extends RequestStatus
 
   override val values: immutable.IndexedSeq[RequestStatus] = findValues
 
   def pending: RequestStatus = Pending
   def accepted(acceptedOn: LocalDateTime): RequestStatus = Accepted(acceptedOn)
   def rejected(rejectedOn: LocalDateTime): RequestStatus = Rejected(rejectedOn)
-  def waitingList(position: Int, addedOn: LocalDateTime): RequestStatus = WaitingList(position, addedOn)
+  def onWaitingList(addedOn: LocalDateTime): RequestStatus = OnWaitingList(addedOn)
 
 }
