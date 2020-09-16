@@ -13,7 +13,7 @@ import com.github.sophiecollard.bookswap.service.authorization._
 import com.github.sophiecollard.bookswap.syntax.MonadTransformerSyntax.OptionTSyntax
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
-trait CopyRequestHandler[F[_]] {
+trait CopyRequestService[F[_]] {
 
   def acceptCopyRequest(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]]
 
@@ -23,7 +23,7 @@ trait CopyRequestHandler[F[_]] {
 
 }
 
-object CopyRequestHandler {
+object CopyRequestService {
 
   final case class AuthorizationInput(userId: Id[User], copyRequestId: Id[CopyRequest])
 
@@ -51,8 +51,8 @@ object CopyRequestHandler {
     copyOnOfferRepository: CopyOnOfferRepository[F]
   )(
     implicit zoneId: ZoneId // TODO Include in config object
-  ): CopyRequestHandler[F] = {
-    new CopyRequestHandler[F] {
+  ): CopyRequestService[F] = {
+    new CopyRequestService[F] {
       override def acceptCopyRequest(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorization[TransactionErrorOr[RequestStatus]]] =
         authorizationService.authorize(AuthorizationInput(userId, requestId)) {
           // TODO implement
