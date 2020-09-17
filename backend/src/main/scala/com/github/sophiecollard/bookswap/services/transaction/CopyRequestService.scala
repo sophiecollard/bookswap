@@ -17,23 +17,23 @@ import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
 trait CopyRequestService[F[_]] {
 
-  import CopyRequestService.{WithAuthorizationByCopyOwner, WithAuthorizationByRequestIssuer}
+  import CopyRequestService.{Command, WithAuthorizationByCopyOwner, WithAuthorizationByRequestIssuer}
 
   def create(copyId: Id[CopyOnOffer])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
 
   def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]]
 
-  def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
-
-  def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
-
-  def putOnWaitingList(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
-
-  def complete(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
+  def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
 
 }
 
 object CopyRequestService {
+
+  sealed trait Command
+  case object Accept           extends Command
+  case object PutOnWaitingList extends Command
+  case object Reject           extends Command
+  case object MarkAsCompleted  extends Command
 
   def create[F[_]: Applicative](
     requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
@@ -65,38 +65,17 @@ object CopyRequestService {
             .pure[F]
         }
 
-      override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]] =
+      override def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
           // TODO implement
-          RequestStatus
-            .accepted(now)
-            .asRight[TransactionError]
-            .pure[F]
-        }
+          val status = command match {
+            case Accept           => RequestStatus.accepted(now)
+            case PutOnWaitingList => RequestStatus.onWaitingList(now)
+            case Reject           => RequestStatus.rejected(now)
+            case MarkAsCompleted  => RequestStatus.completed(now)
+          }
 
-      override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]] =
-        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          // TODO implement
-          RequestStatus
-            .rejected(now)
-            .asRight[TransactionError]
-            .pure[F]
-        }
-
-      override def putOnWaitingList(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]] =
-        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          // TODO implement
-          RequestStatus
-            .onWaitingList(now)
-            .asRight[TransactionError]
-            .pure[F]
-        }
-
-      override def complete(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]] =
-        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          // TODO implement
-          RequestStatus
-            .completed(now)
+          status
             .asRight[TransactionError]
             .pure[F]
         }
