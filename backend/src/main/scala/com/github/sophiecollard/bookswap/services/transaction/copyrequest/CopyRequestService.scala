@@ -1,28 +1,37 @@
-package com.github.sophiecollard.bookswap.services.transaction
+package com.github.sophiecollard.bookswap.services.transaction.copyrequest
 
 import java.time.ZoneId
 
-import cats.{Applicative, Monad}
+import cats.Applicative
 import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.CopyOnOffer
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.{NotTheCopyOwner, NotTheRequestIssuer, TransactionError, TransactionErrorOr}
+import com.github.sophiecollard.bookswap.error.Error.{TransactionError, TransactionErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyOnOfferRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
-import com.github.sophiecollard.bookswap.syntax.MonadTransformerSyntax.OptionTSyntax
+import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
 trait CopyRequestService[F[_]] {
 
-  import CopyRequestService.{Command, WithAuthorizationByCopyOwner, WithAuthorizationByRequestIssuer}
+  import CopyRequestService.Command
 
+  /**
+    * Invoked by a registered user to create a new CopyRequest.
+    */
   def create(copyId: Id[CopyOnOffer])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
 
+  /**
+    * Invoked by a registered user to cancel one of their CopyRequests.
+    */
   def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]]
 
+  /**
+    * Invoked by the CopyOnOffer owner to accept, reject or complete a CopyRequest.
+    */
   def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
 
 }
@@ -30,10 +39,9 @@ trait CopyRequestService[F[_]] {
 object CopyRequestService {
 
   sealed trait Command
-  case object Accept           extends Command
-  case object PutOnWaitingList extends Command
-  case object Reject           extends Command
-  case object MarkAsCompleted  extends Command
+  case object Accept          extends Command
+  case object Reject          extends Command
+  case object MarkAsCompleted extends Command
 
   def create[F[_]: Applicative](
     requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
@@ -70,7 +78,6 @@ object CopyRequestService {
           // TODO implement
           val status = command match {
             case Accept           => RequestStatus.accepted(now)
-            case PutOnWaitingList => RequestStatus.onWaitingList(now)
             case Reject           => RequestStatus.rejected(now)
             case MarkAsCompleted  => RequestStatus.completed(now)
           }
@@ -81,43 +88,5 @@ object CopyRequestService {
         }
     }
   }
-
-  trait ByRequestIssuer
-  trait ByCopyOwner
-
-  type WithAuthorizationByRequestIssuer[R] = WithAuthorization[R, ByRequestIssuer]
-  type WithAuthorizationByCopyOwner[R] = WithAuthorization[R, ByCopyOwner]
-
-  final case class AuthorizationInput(userId: Id[User], copyRequestId: Id[CopyRequest])
-
-  def createCopyOwnerAuthorizationService[F[_]: Monad](
-    copyRequestRepository: CopyRequestRepository[F],
-    copyOnOfferRepository: CopyOnOfferRepository[F]
-  ): AuthorizationService[F, AuthorizationInput, ByCopyOwner] =
-    AuthorizationService.create[F, AuthorizationInput, ByCopyOwner] { case AuthorizationInput(userId, copyRequestId) =>
-      val maybeCopyOwnerId = for {
-        copyRequest <- copyRequestRepository.get(copyRequestId).asOptionT
-        copy <- copyOnOfferRepository.get(copyRequest.copyId).asOptionT
-      } yield copy.offeredBy
-
-      maybeCopyOwnerId.value.map {
-        case Some(copyOwnerId) if copyOwnerId == userId =>
-          Right(())
-        case _ =>
-          Left(NotTheCopyOwner(userId, copyRequestId))
-      }
-    }
-
-  def createRequestIssuerAuthorizationService[F[_]: Monad](
-    copyRequestRepository: CopyRequestRepository[F]
-  ): AuthorizationService[F, AuthorizationInput, ByRequestIssuer] =
-    AuthorizationService.create[F, AuthorizationInput, ByRequestIssuer] { case AuthorizationInput(userId, copyRequestId) =>
-      copyRequestRepository.get(copyRequestId).map {
-        case Some(copyRequest) if copyRequest.requestedBy == userId =>
-          Right(())
-        case _ =>
-          Left(NotTheRequestIssuer(userId, copyRequestId))
-      }
-    }
 
 }
