@@ -12,14 +12,18 @@ object RequestStatus extends Enum[RequestStatus] {
 
   case object Pending                                    extends RequestStatus
   final case class Accepted(acceptedOn: LocalDateTime)   extends RequestStatus
-  final case class Rejected(rejectedOn: LocalDateTime)   extends RequestStatus
   final case class OnWaitingList(addedOn: LocalDateTime) extends RequestStatus
+  final case class Rejected(rejectedOn: LocalDateTime)   extends RequestStatus
+  final case class Completed(completedOn: LocalDateTime) extends RequestStatus
+  final case class Cancelled(cancelledOn: LocalDateTime) extends RequestStatus
 
   override val values: immutable.IndexedSeq[RequestStatus] = findValues
 
   def pending: RequestStatus = Pending
   def accepted(acceptedOn: LocalDateTime): RequestStatus = Accepted(acceptedOn)
-  def rejected(rejectedOn: LocalDateTime): RequestStatus = Rejected(rejectedOn)
   def onWaitingList(addedOn: LocalDateTime): RequestStatus = OnWaitingList(addedOn)
+  def rejected(rejectedOn: LocalDateTime): RequestStatus = Rejected(rejectedOn)
+  def completed(completedOn: LocalDateTime): RequestStatus = Completed(completedOn)
+  def cancelled(cancelledOn: LocalDateTime): RequestStatus = Cancelled(cancelledOn)
 
 }

@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.service.transaction
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time.ZoneId
 
 import cats.{Applicative, Monad}
 import cats.implicits._

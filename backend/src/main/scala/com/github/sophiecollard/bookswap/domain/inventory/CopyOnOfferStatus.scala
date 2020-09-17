@@ -11,7 +11,7 @@ object CopyOnOfferStatus extends StringEnum[CopyOnOfferStatus] {
   case object Available extends CopyOnOfferStatus("available")
   case object Reserved  extends CopyOnOfferStatus("reserved")
   case object Swapped   extends CopyOnOfferStatus("swapped")
-  case object Expired   extends CopyOnOfferStatus("expired")
+  case object Withdrawn extends CopyOnOfferStatus("withdrawn")
 
   override val values: immutable.IndexedSeq[CopyOnOfferStatus] = findValues
 
