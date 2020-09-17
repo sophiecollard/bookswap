@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.service.inventory
+package com.github.sophiecollard.bookswap.services.inventory
 
 import cats.{Applicative, Monad}
 import cats.implicits._
@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.domain.user.UserStatus.Admin
 import com.github.sophiecollard.bookswap.error.Error.NotAnAdmin
 import com.github.sophiecollard.bookswap.repositories.{AuthorRepository, UserRepository}
-import com.github.sophiecollard.bookswap.service.authorization._
+import com.github.sophiecollard.bookswap.services.authorization._
 
 trait AuthorService[F[_]] {
 

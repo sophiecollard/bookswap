@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.service.transaction
+package com.github.sophiecollard.bookswap.services.transaction
 
 import java.time.ZoneId
 
@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, Reques
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.Error.{NotTheCopyOwner, NotTheRequestIssuer, TransactionError, TransactionErrorOr}
 import com.github.sophiecollard.bookswap.repositories.{CopyOnOfferRepository, CopyRequestRepository}
-import com.github.sophiecollard.bookswap.service.authorization._
+import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.syntax.MonadTransformerSyntax.OptionTSyntax
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 

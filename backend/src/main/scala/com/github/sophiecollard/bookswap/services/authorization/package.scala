@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.service
+package com.github.sophiecollard.bookswap.services
 
 import cats.Monad
 import cats.implicits._
