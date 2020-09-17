@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.CopyOnOffer
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.{NoPermissionOnCopyRequest, TransactionError, TransactionErrorOr}
+import com.github.sophiecollard.bookswap.error.Error.{NotTheCopyOwner, NotTheRequestIssuer, TransactionError, TransactionErrorOr}
 import com.github.sophiecollard.bookswap.repositories.{CopyOnOfferRepository, CopyRequestRepository}
 import com.github.sophiecollard.bookswap.service.authorization._
 import com.github.sophiecollard.bookswap.syntax.MonadTransformerSyntax.OptionTSyntax
@@ -124,7 +124,7 @@ object CopyRequestService {
         case Some(copyOwnerId) if copyOwnerId == userId =>
           Right(())
         case _ =>
-          Left(NoPermissionOnCopyRequest(userId, copyRequestId)) // TODO define more specific error
+          Left(NotTheCopyOwner(userId, copyRequestId))
       }
     }
 
@@ -136,7 +136,7 @@ object CopyRequestService {
         case Some(copyRequest) if copyRequest.requestedBy == userId =>
           Right(())
         case _ =>
-          Left(NoPermissionOnCopyRequest(userId, copyRequestId)) // TODO define more specific error
+          Left(NotTheRequestIssuer(userId, copyRequestId))
       }
     }
 

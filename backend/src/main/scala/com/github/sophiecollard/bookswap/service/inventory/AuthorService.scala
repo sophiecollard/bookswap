@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.domain.user.UserStatus.Admin
-import com.github.sophiecollard.bookswap.error.Error.NotAnAdminUser
+import com.github.sophiecollard.bookswap.error.Error.NotAnAdmin
 import com.github.sophiecollard.bookswap.repositories.{AuthorRepository, UserRepository}
 import com.github.sophiecollard.bookswap.service.authorization._
 
@@ -48,7 +48,7 @@ object AuthorService {
         case Some(User(_, _, Admin)) =>
           Right(())
         case _ =>
-          Left(NotAnAdminUser(userId))
+          Left(NotAnAdmin(userId))
       }
     }
 

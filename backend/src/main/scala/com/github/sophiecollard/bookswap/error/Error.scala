@@ -12,13 +12,19 @@ object Error {
 
   sealed abstract class AuthorizationError(override val message: String) extends Error
 
-  final case class NotAnAdminUser(userId: Id[User]) extends AuthorizationError(
-    message = s"User [${userId.value}] is not an admin."
-  )
-
-  final case class NoPermissionOnCopyRequest(userId: Id[User], copyRequestId: Id[CopyRequest])
+  final case class NotAnAdmin(userId: Id[User])
     extends AuthorizationError(
-      message = s"User [${userId.value}] does not have permission to modify CopyRequest [${copyRequestId.value}]."
+      message = s"User [${userId.value}] is not an admin."
+    )
+
+  final case class NotTheCopyOwner(userId: Id[User], copyRequestId: Id[CopyRequest])
+    extends AuthorizationError(
+      message = s"User [${userId.value}] is not the owner of the copy requested in CopyRequest [${copyRequestId.value}]."
+    )
+
+  final case class NotTheRequestIssuer(userId: Id[User], copyRequestId: Id[CopyRequest])
+    extends AuthorizationError(
+      message = s"User [${userId.value}] did not issue CopyRequest [${copyRequestId.value}]."
     )
 
   type AuthorizationErrorOr[A] = Either[AuthorizationError, A]
