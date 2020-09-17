@@ -9,7 +9,8 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.Error.{NotTheCopyOwner, NotTheRequestIssuer, TransactionError, TransactionErrorOr}
-import com.github.sophiecollard.bookswap.repositories.{CopyOnOfferRepository, CopyRequestRepository}
+import com.github.sophiecollard.bookswap.repositories.inventory.CopyOnOfferRepository
+import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.syntax.MonadTransformerSyntax.OptionTSyntax
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now

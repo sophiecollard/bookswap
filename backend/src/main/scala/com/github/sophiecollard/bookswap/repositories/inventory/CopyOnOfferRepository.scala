@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.repositories
+package com.github.sophiecollard.bookswap.repositories.inventory
 
 import com.github.sophiecollard.bookswap.domain.inventory.CopyOnOffer
 import com.github.sophiecollard.bookswap.domain.shared.Id

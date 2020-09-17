@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.repositories
+package com.github.sophiecollard.bookswap.repositories.user
 
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
