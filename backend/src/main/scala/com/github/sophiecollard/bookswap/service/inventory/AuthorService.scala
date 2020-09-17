@@ -12,7 +12,9 @@ import com.github.sophiecollard.bookswap.service.authorization._
 
 trait AuthorService[F[_]] {
 
-  def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorization[Unit]]
+  import AuthorService.WithAuthorizationByAdminStatus
+
+  def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[Unit]]
 
   def get(id: Id[Author]): F[Option[Author]]
 
@@ -20,30 +22,34 @@ trait AuthorService[F[_]] {
 
 object AuthorService {
 
-  def createAuthorizationService[F[_]: Monad](
-    userRepository: UserRepository[F]
-  ): AuthorizationService[F, Id[User]] =
-    AuthorizationService.create[F, Id[User]] { userId =>
-      userRepository.get(userId).map {
-        case Some(User(_, _, Admin)) =>
-          Right(())
-        case _ =>
-          Left(NotAnAdminUser(userId))
-      }
-    }
-
   def create[F[_]: Applicative](
-    authorizationService: AuthorizationService[F, Id[User]],
+    authorizationService: AuthorizationService[F, Id[User], ByAdminStatus],
     repository: AuthorRepository[F]
   ): AuthorService[F] =
     new AuthorService[F] {
-      override def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorization[Unit]] =
+      override def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[Unit]] =
         authorizationService.authorize(userId) {
           repository.delete(id)
         }
 
       override def get(id: Id[Author]): F[Option[Author]] =
         repository.get(id)
+    }
+
+  trait ByAdminStatus
+
+  type WithAuthorizationByAdminStatus[R] = WithAuthorization[R, ByAdminStatus]
+
+  def createAuthorizationService[F[_]: Monad](
+    userRepository: UserRepository[F]
+  ): AuthorizationService[F, Id[User], ByAdminStatus] =
+    AuthorizationService.create[F, Id[User], ByAdminStatus] { userId =>
+      userRepository.get(userId).map {
+        case Some(User(_, _, Admin)) =>
+          Right(())
+        case _ =>
+          Left(NotAnAdminUser(userId))
+      }
     }
 
 }
