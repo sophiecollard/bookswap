@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.error.Error.{NotTheCopyOwner, NotTheReq
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyOnOfferRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization.{AuthorizationService, WithAuthorization}
-import com.github.sophiecollard.bookswap.syntax.OptionTSyntax.FOpSyntax
+import com.github.sophiecollard.bookswap.syntax.OptionTSyntax.FOpToOptionT
 
 object Authorization {
 
