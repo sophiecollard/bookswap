@@ -52,17 +52,19 @@ object CopyRequestService {
     implicit zoneId: ZoneId // TODO Include in config object
   ): CopyRequestService[F] = {
     new CopyRequestService[F] {
-      override def create(copyId: Id[CopyOnOffer])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]] =
-        // TODO implement
-        CopyRequest(
+      override def create(copyId: Id[CopyOnOffer])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]] = {
+        val copyRequest = CopyRequest(
           id = Id.generate[CopyRequest],
           copyId,
           requestedBy = userId,
           requestedOn = now,
           status = RequestStatus.Pending
         )
-          .asRight[TransactionError]
-          .pure[F]
+
+        copyRequestRepository
+          .create(copyRequest)
+          .map(_ => copyRequest.asRight[TransactionError])
+      }
 
       override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]] =
         requestIssuerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
