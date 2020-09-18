@@ -9,7 +9,6 @@ libraryDependencies ++= Seq(
 
 scalacOptions ++= Seq(
   "-Xfatal-warnings",
-  "-Yno-adapted-args",
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
   "-Ywarn-value-discard",
