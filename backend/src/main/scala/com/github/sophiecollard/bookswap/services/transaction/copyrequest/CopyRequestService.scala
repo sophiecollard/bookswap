@@ -18,7 +18,7 @@ import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
 trait CopyRequestService[F[_]] {
 
-  import CopyRequestService.Command
+  import CopyRequestService.Statuses
 
   /**
     * Invoked by a registered user to create a new CopyRequest.
@@ -28,16 +28,28 @@ trait CopyRequestService[F[_]] {
   /**
     * Invoked by a registered user to cancel one of their CopyRequests.
     */
-  def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]]
+  def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[Statuses]]]
 
   /**
-    * Invoked by the Copy owner to accept, reject or fulfill a CopyRequest.
+    * Invoked by the Copy owner to accept a CopyRequest.
     */
-  def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
+  def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
+
+  /**
+    * Invoked by the Copy owner to reject CopyRequest.
+    */
+  def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
+
+  /**
+    * Invoked by the Copy owner to mark a CopyRequest as fulfilled.
+    */
+  def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
 
 }
 
 object CopyRequestService {
+
+  type Statuses = (RequestStatus, CopyStatus)
 
   sealed trait Command
   case object Accept          extends Command
@@ -67,7 +79,7 @@ object CopyRequestService {
           .map(_ => copyRequest.asRight[TransactionError])
       }
 
-      override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]] =
+      override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[Statuses]]] =
         requestIssuerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
           (
             for {
@@ -84,26 +96,37 @@ object CopyRequestService {
                 .liftToEitherT[TransactionError]
               // Update the status of the first CopyRequest on the waiting list, if any
               // If no CopyRequest is found on the waiting list, the Copy's status changes back to Available
-              _ <- copyRequestRepository.findFirstOnWaitingList(copy.id).flatMap {
+              updatedCopyStatus <- copyRequestRepository.findFirstOnWaitingList(copy.id).flatMap {
                 case Some(nextRequestOnWaitingList) =>
-                  copyRequestRepository.updateStatus(nextRequestOnWaitingList.id, RequestStatus.Accepted(now))
+                  copyRequestRepository
+                    .updateStatus(nextRequestOnWaitingList.id, RequestStatus.Accepted(now))
+                    .as[CopyStatus](CopyStatus.Reserved)
                 case None =>
-                  copyRepository.updateStatus(copy.id, CopyStatus.Available)
+                  copyRepository
+                    .updateStatus(copy.id, CopyStatus.Available)
+                    .as[CopyStatus](CopyStatus.Available)
               }.liftToEitherT[TransactionError]
-            } yield updatedRequestStatus
+            } yield (updatedRequestStatus, updatedCopyStatus)
           ).value
         }
 
-      override def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]] =
+      override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          // TODO implement
-          val status = command match {
-            case Accept           => RequestStatus.accepted(now)
-            case Reject           => RequestStatus.rejected(now)
-            case MarkAsFulfilled  => RequestStatus.fulfilled(now)
-          }
+          (RequestStatus.accepted(now), CopyStatus.Reserved: CopyStatus)
+            .asRight[TransactionError]
+            .pure[F]
+        }
 
-          status
+      override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
+        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
+          (RequestStatus.rejected(now), CopyStatus.Available: CopyStatus)
+            .asRight[TransactionError]
+            .pure[F]
+        }
+
+      override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
+        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
+          (RequestStatus.fulfilled(now), CopyStatus.Swapped: CopyStatus)
             .asRight[TransactionError]
             .pure[F]
         }
