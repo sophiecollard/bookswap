@@ -14,7 +14,25 @@ package object authorization {
     * for authorizing resource owners) this tag helps the compiler enforce that the right kind of authorization
     * is used.
     */
-  sealed abstract class WithAuthorization[+R, Tag]
+  sealed abstract class WithAuthorization[+R, Tag] {
+    final def isSuccess: Boolean = this match {
+      case Success(_) => true
+      case Failure(_) => false
+    }
+
+    final def isFailure: Boolean =
+      !isSuccess
+
+    final def toEither: Either[AuthorizationError, R] = this match {
+      case Success(result) => Right(result)
+      case Failure(error)  => Left(error)
+    }
+
+    final def getResult: R = this match {
+      case Success(result) => result
+      case Failure(error)  => throw new RuntimeException(s"AuthorizationError: $error")
+    }
+  }
 
   object WithAuthorization {
     def failure[R, Tag](error: AuthorizationError): WithAuthorization[R, Tag] =
