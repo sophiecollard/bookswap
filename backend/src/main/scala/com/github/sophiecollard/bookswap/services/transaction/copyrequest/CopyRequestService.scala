@@ -6,14 +6,18 @@ import cats.Monad
 import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
+import com.github.sophiecollard.bookswap.error.Error
 import com.github.sophiecollard.bookswap.error.Error.{ResourceNotFound, TransactionError, TransactionErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
-import com.github.sophiecollard.bookswap.syntax.EitherTSyntax.{FOpToEitherT, FToEitherT}
+import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate.{NoUpdate, UpdateRequestAndCopyStatuses, UpdateRequestAndNextRequestStatuses, UpdateRequestStatus}
+import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.{InvalidState, InitialState, StateMachine, StateUpdate}
+import com.github.sophiecollard.bookswap.syntax.EitherTSyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
 trait CopyRequestService[F[_]] {
@@ -51,11 +55,6 @@ object CopyRequestService {
 
   type Statuses = (RequestStatus, CopyStatus)
 
-  sealed trait Command
-  case object Accept          extends Command
-  case object Reject          extends Command
-  case object MarkAsFulfilled extends Command
-
   def create[F[_]: Monad](
     requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
     copyOwnerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
@@ -71,7 +70,7 @@ object CopyRequestService {
           copyId,
           requestedBy = userId,
           requestedOn = now,
-          status = RequestStatus.Pending
+          status = Pending
         )
 
         copyRequestRepository
@@ -81,55 +80,74 @@ object CopyRequestService {
 
       override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[Statuses]]] =
         requestIssuerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          (
-            for {
-              copyRequest <- copyRequestRepository
-                .get(requestId)
-                .asEitherT(ResourceNotFound("CopyRequest", requestId))
-              copy <- copyRepository
-                .get(copyRequest.copyId)
-                .asEitherT(ResourceNotFound("Copy", copyRequest.copyId))
-              // Update the current CopyRequest's status
-              updatedRequestStatus = RequestStatus.cancelled(now)
-              _ <- copyRequestRepository
-                .updateStatus(requestId, updatedRequestStatus)
-                .liftToEitherT[TransactionError]
-              // Update the status of the first CopyRequest on the waiting list, if any
-              // If no CopyRequest is found on the waiting list, the Copy's status changes back to Available
-              updatedCopyStatus <- copyRequestRepository.findFirstOnWaitingList(copy.id).flatMap {
-                case Some(nextRequestOnWaitingList) =>
-                  copyRequestRepository
-                    .updateStatus(nextRequestOnWaitingList.id, RequestStatus.Accepted(now))
-                    .as[CopyStatus](CopyStatus.Reserved)
-                case None =>
-                  copyRepository
-                    .updateStatus(copy.id, CopyStatus.Available)
-                    .as[CopyStatus](CopyStatus.Available)
-              }.liftToEitherT[TransactionError]
-            } yield (updatedRequestStatus, updatedCopyStatus)
-          ).value
+          handleCommand(requestId)(StateMachine.handleCancelCommand)
         }
 
       override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          (RequestStatus.accepted(now), CopyStatus.Reserved: CopyStatus)
-            .asRight[TransactionError]
-            .pure[F]
+          handleCommand(requestId)(StateMachine.handleAcceptCommand)
         }
 
       override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          (RequestStatus.rejected(now), CopyStatus.Available: CopyStatus)
-            .asRight[TransactionError]
-            .pure[F]
+          handleCommand(requestId)(StateMachine.handleRejectCommand)
         }
 
       override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
-          (RequestStatus.fulfilled(now), CopyStatus.Swapped: CopyStatus)
-            .asRight[TransactionError]
-            .pure[F]
+          handleCommand(requestId)(StateMachine.handleMarkAsFulfilledCommand)
         }
+
+      private def handleCommand(
+        requestId: Id[CopyRequest]
+      )(
+        handler: InitialState => Either[InvalidState, StateUpdate]
+      ): F[TransactionErrorOr[Statuses]] =
+        (
+          for {
+            copyRequest <- copyRequestRepository
+              .get(requestId)
+              .asEitherT[TransactionError](ResourceNotFound("CopyRequest", requestId))
+            copy <- copyRepository
+              .get(copyRequest.copyId)
+              .asEitherT[TransactionError](ResourceNotFound("Copy", copyRequest.copyId))
+            maybeNextCopyRequest <- copyRequestRepository
+              .findFirstOnWaitingList(copy.id)
+              .liftToEitherT[TransactionError]
+            initialState = InitialState(copyRequest.status, maybeNextCopyRequest.map(r =>(r.id, r.status)), copy.status)
+            statuses <- handler(initialState)
+              .pure[F]
+              .asEitherT
+              .leftMap[TransactionError](_ => Error.InvalidState(s"Invalid state: $initialState"))
+              .flatMapF(performStateUpdate(copyRequest.id, copy.id, initialState))
+          } yield statuses
+          ).value
+
+      private def performStateUpdate(
+        requestId: Id[CopyRequest],
+        copyId: Id[Copy],
+        initialState: InitialState
+      )(
+        stateUpdate: StateUpdate
+      ): F[TransactionErrorOr[Statuses]] = {
+        stateUpdate match {
+          case UpdateRequestStatus(requestStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) as
+              Right((requestStatus, initialState.copyStatus))
+          case UpdateRequestAndNextRequestStatuses(requestStatus, nextRequestId, nextRequestStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRequestRepository.updateStatus(nextRequestId, nextRequestStatus) as
+              Right((requestStatus, initialState.copyStatus))
+          case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRepository.updateStatus(copyId, copyStatus) as
+              Right((requestStatus, copyStatus))
+          case NoUpdate =>
+            (initialState.requestStatus, initialState.copyStatus)
+              .asRight[TransactionError]
+              .pure[F]
+        }
+      }
     }
   }
 

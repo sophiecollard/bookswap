@@ -31,6 +31,9 @@ object Error {
 
   sealed abstract class TransactionError(override val message: String) extends Error
 
+  final case class InvalidState(override val message: String)
+    extends TransactionError(message)
+
   final case class ResourceNotFound[A](resourceName: String, id: Id[A])
     extends TransactionError(
       message = s"$resourceName [${id.value}] was not found."
