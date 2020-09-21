@@ -6,7 +6,41 @@ import enumeratum.{Enum, EnumEntry}
 
 import scala.collection.immutable
 
-sealed trait RequestStatus extends EnumEntry
+sealed trait RequestStatus extends EnumEntry {
+
+  import RequestStatus._
+
+  def isPending: Boolean = this match {
+    case Pending => true
+    case _       => false
+  }
+
+  def isAccepted: Boolean = this match {
+    case Accepted(_) => true
+    case _           => false
+  }
+
+  def isOnWaitingList: Boolean = this match {
+    case OnWaitingList(_) => true
+    case _                => false
+  }
+
+  def isRejected: Boolean = this match {
+    case Rejected(_) => true
+    case _           => false
+  }
+
+  def isFulfilled: Boolean = this match {
+    case Fulfilled(_) => true
+    case _            => false
+  }
+
+  def isCancelled: Boolean = this match {
+    case Cancelled(_) => true
+    case _            => false
+  }
+
+}
 
 object RequestStatus extends Enum[RequestStatus] {
 
