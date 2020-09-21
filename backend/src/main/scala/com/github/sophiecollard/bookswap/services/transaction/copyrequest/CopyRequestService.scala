@@ -119,7 +119,7 @@ object CopyRequestService {
               .pure[F]
               .asEitherT
               .leftMap[TransactionError](_ => Error.InvalidState(s"Invalid state: $initialState"))
-              .flatMapF(performStateUpdate(copyRequest.id, copy.id, initialState))
+              .semiflatMap(performStateUpdate(copyRequest.id, copy.id, initialState))
           } yield statuses
           ).value
 
@@ -129,22 +129,21 @@ object CopyRequestService {
         initialState: InitialState
       )(
         stateUpdate: StateUpdate
-      ): F[TransactionErrorOr[Statuses]] = {
+      ): F[Statuses] = {
         stateUpdate match {
           case UpdateRequestStatus(requestStatus) =>
             copyRequestRepository.updateStatus(requestId, requestStatus) as
-              Right((requestStatus, initialState.copyStatus))
+              (requestStatus, initialState.copyStatus)
           case UpdateRequestAndNextRequestStatuses(requestStatus, nextRequestId, nextRequestStatus) =>
             copyRequestRepository.updateStatus(requestId, requestStatus) >>
               copyRequestRepository.updateStatus(nextRequestId, nextRequestStatus) as
-              Right((requestStatus, initialState.copyStatus))
+              (requestStatus, initialState.copyStatus)
           case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
             copyRequestRepository.updateStatus(requestId, requestStatus) >>
               copyRepository.updateStatus(copyId, copyStatus) as
-              Right((requestStatus, copyStatus))
+              (requestStatus, copyStatus)
           case NoUpdate =>
             (initialState.requestStatus, initialState.copyStatus)
-              .asRight[TransactionError]
               .pure[F]
         }
       }
