@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.repositories.transaction
 
-import com.github.sophiecollard.bookswap.domain.inventory.CopyOnOffer
+import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 
@@ -12,6 +12,6 @@ trait CopyRequestRepository[F[_]] {
 
   def get(id: Id[CopyRequest]): F[Option[CopyRequest]]
 
-  def findFirstOnWaitingList(copyId: Id[CopyOnOffer]): F[Option[CopyRequest]]
+  def findFirstOnWaitingList(copyId: Id[Copy]): F[Option[CopyRequest]]
 
 }

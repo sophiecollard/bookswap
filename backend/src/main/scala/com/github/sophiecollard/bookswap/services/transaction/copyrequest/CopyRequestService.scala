@@ -4,12 +4,12 @@ import java.time.ZoneId
 
 import cats.Monad
 import cats.implicits._
-import com.github.sophiecollard.bookswap.domain.inventory.{CopyOnOffer, CopyOnOfferStatus}
+import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.Error.{ResourceNotFound, TransactionError, TransactionErrorOr}
-import com.github.sophiecollard.bookswap.repositories.inventory.CopyOnOfferRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
@@ -23,7 +23,7 @@ trait CopyRequestService[F[_]] {
   /**
     * Invoked by a registered user to create a new CopyRequest.
     */
-  def create(copyId: Id[CopyOnOffer])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
+  def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
 
   /**
     * Invoked by a registered user to cancel one of their CopyRequests.
@@ -31,7 +31,7 @@ trait CopyRequestService[F[_]] {
   def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]]
 
   /**
-    * Invoked by the CopyOnOffer owner to accept, reject or fulfill a CopyRequest.
+    * Invoked by the Copy owner to accept, reject or fulfill a CopyRequest.
     */
   def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
 
@@ -48,12 +48,12 @@ object CopyRequestService {
     requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
     copyOwnerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
     copyRequestRepository: CopyRequestRepository[F],
-    copyOnOfferRepository: CopyOnOfferRepository[F]
+    copyRepository: CopyRepository[F]
   )(
     implicit zoneId: ZoneId // TODO Include in config object
   ): CopyRequestService[F] = {
     new CopyRequestService[F] {
-      override def create(copyId: Id[CopyOnOffer])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]] = {
+      override def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]] = {
         val copyRequest = CopyRequest(
           id = Id.generate[CopyRequest],
           copyId,
@@ -74,21 +74,21 @@ object CopyRequestService {
               copyRequest <- copyRequestRepository
                 .get(requestId)
                 .asEitherT(ResourceNotFound("CopyRequest", requestId))
-              copyOnOffer <- copyOnOfferRepository
+              copy <- copyRepository
                 .get(copyRequest.copyId)
-                .asEitherT(ResourceNotFound("CopyOnOffer", copyRequest.copyId))
+                .asEitherT(ResourceNotFound("Copy", copyRequest.copyId))
               // Update the current CopyRequest's status
               updatedRequestStatus = RequestStatus.cancelled(now)
               _ <- copyRequestRepository
                 .updateStatus(requestId, updatedRequestStatus)
                 .liftToEitherT[TransactionError]
               // Update the status of the first CopyRequest on the waiting list, if any
-              // If no CopyRequest is found on the waiting list, the CopyOnOffer's status changes back to Available
-              _ <- copyRequestRepository.findFirstOnWaitingList(copyOnOffer.id).flatMap {
+              // If no CopyRequest is found on the waiting list, the Copy's status changes back to Available
+              _ <- copyRequestRepository.findFirstOnWaitingList(copy.id).flatMap {
                 case Some(nextRequestOnWaitingList) =>
                   copyRequestRepository.updateStatus(nextRequestOnWaitingList.id, RequestStatus.Accepted(now))
                 case None =>
-                  copyOnOfferRepository.updateStatus(copyOnOffer.id, CopyOnOfferStatus.Available)
+                  copyRepository.updateStatus(copy.id, CopyStatus.Available)
               }.liftToEitherT[TransactionError]
             } yield updatedRequestStatus
           ).value
