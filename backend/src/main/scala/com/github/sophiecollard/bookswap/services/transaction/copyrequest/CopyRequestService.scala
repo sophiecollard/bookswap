@@ -121,7 +121,7 @@ object CopyRequestService {
               .leftMap[TransactionError](_ => Error.InvalidState(s"Invalid state: $initialState"))
               .semiflatMap(performStateUpdate(copyRequest.id, copy.id, initialState))
           } yield statuses
-          ).value
+        ).value
 
       private def performStateUpdate(
         requestId: Id[CopyRequest],
