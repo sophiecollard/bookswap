@@ -31,7 +31,7 @@ trait CopyRequestService[F[_]] {
   def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[RequestStatus]]]
 
   /**
-    * Invoked by the CopyOnOffer owner to accept, reject or complete a CopyRequest.
+    * Invoked by the CopyOnOffer owner to accept, reject or fulfill a CopyRequest.
     */
   def respond(requestId: Id[CopyRequest], command: Command)(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[RequestStatus]]]
 
@@ -42,7 +42,7 @@ object CopyRequestService {
   sealed trait Command
   case object Accept          extends Command
   case object Reject          extends Command
-  case object MarkAsCompleted extends Command
+  case object MarkAsFulfilled extends Command
 
   def create[F[_]: Monad](
     requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
@@ -100,7 +100,7 @@ object CopyRequestService {
           val status = command match {
             case Accept           => RequestStatus.accepted(now)
             case Reject           => RequestStatus.rejected(now)
-            case MarkAsCompleted  => RequestStatus.completed(now)
+            case MarkAsFulfilled  => RequestStatus.fulfilled(now)
           }
 
           status
