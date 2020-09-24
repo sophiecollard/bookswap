@@ -17,6 +17,7 @@ trait CopyRepository[F[_]] {
 }
 
 object CopyRepository {
+
   def create: CopyRepository[ConnectionIO] = new CopyRepository[ConnectionIO] {
     override def create(copy: Copy): ConnectionIO[Unit] =
       insertCopyUpdate(copy)
