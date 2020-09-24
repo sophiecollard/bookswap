@@ -5,7 +5,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
-object TestCopyRepository extends CopyRepository[CatsId] {
+class TestCopyRepository extends CopyRepository[CatsId] {
 
   def create(copy: Copy): CatsId[Unit] =
     store += ((copy.id, copy))

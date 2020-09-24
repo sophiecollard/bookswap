@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 
-object TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
+class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
 
   def create(copyRequest: CopyRequest): CatsId[Unit] =
     store += ((copyRequest.id, copyRequest))
