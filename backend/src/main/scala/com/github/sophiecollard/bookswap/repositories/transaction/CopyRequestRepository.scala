@@ -6,12 +6,24 @@ import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, Reques
 
 trait CopyRequestRepository[F[_]] {
 
+  /**
+    * Creates a new request
+    */
   def create(copyRequest: CopyRequest): F[Unit]
 
+  /**
+    * Updates the status of the specified request
+    */
   def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Unit]
 
+  /**
+    * Returns the specified request (if any)
+    */
   def get(id: Id[CopyRequest]): F[Option[CopyRequest]]
 
+  /**
+    * Returns the first request added to the waiting list for the specified copy
+    */
   def findFirstOnWaitingList(copyId: Id[Copy]): F[Option[CopyRequest]]
 
 }
