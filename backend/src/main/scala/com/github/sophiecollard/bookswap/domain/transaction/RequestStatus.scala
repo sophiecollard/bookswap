@@ -2,6 +2,8 @@ package com.github.sophiecollard.bookswap.domain.transaction
 
 import java.time.LocalDateTime
 
+import doobie.util.{Read, Write}
+import doobie.implicits.javatime._
 import enumeratum.{Enum, EnumEntry}
 
 import scala.collection.immutable
@@ -59,5 +61,26 @@ object RequestStatus extends Enum[RequestStatus] {
   def rejected(rejectedOn: LocalDateTime): RequestStatus = Rejected(rejectedOn)
   def fulfilled(fulfilledOn: LocalDateTime): RequestStatus = Fulfilled(fulfilledOn)
   def cancelled(cancelledOn: LocalDateTime): RequestStatus = Cancelled(cancelledOn)
+
+  implicit val read: Read[RequestStatus] =
+    Read[(String, Option[LocalDateTime])].map {
+      case ("pending", None)                  => Pending
+      case ("accepted", Some(acceptedOn))     => Accepted(acceptedOn)
+      case ("on_waiting_list", Some(addedOn)) => OnWaitingList(addedOn)
+      case ("rejected", Some(rejectedOn))     => Rejected(rejectedOn)
+      case ("fulfilled", Some(fulfilledOn))   => Fulfilled(fulfilledOn)
+      case ("cancelled", Some(cancelledOn))   => Cancelled(cancelledOn)
+      case other => throw new RuntimeException(s"Invalid RequestStatus: $other")
+    }
+
+  implicit val write: Write[RequestStatus] =
+    Write[(String, Option[LocalDateTime])].contramap {
+      case Pending                => ("pending", None)
+      case Accepted(acceptedOn)   => ("accepted", Some(acceptedOn))
+      case OnWaitingList(addedOn) => ("on_waiting_list", Some(addedOn))
+      case Rejected(rejectedOn)   => ("rejected", Some(rejectedOn))
+      case Fulfilled(fulfilledOn) => ("fulfilled", Some(fulfilledOn))
+      case Cancelled(cancelledOn) => ("cancelled", Some(cancelledOn))
+    }
 
 }

@@ -24,6 +24,6 @@ object UserRepository {
          |SELECT id, name, status
          |FROM users
          |WHERE id = $id
-       """.query[User]
+       """.stripMargin.query[User]
 
 }
