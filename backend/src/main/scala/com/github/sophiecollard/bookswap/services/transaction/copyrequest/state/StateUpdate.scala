@@ -21,6 +21,12 @@ object StateUpdate {
     copyStatus: CopyStatus
   ) extends StateUpdate
 
+  final case class UpdateRequestAndOpenRequestsAndCopyStatuses(
+    requestStatus: RequestStatus,
+    openRequestsStatus: RequestStatus,
+    copyStatus: CopyStatus
+  ) extends StateUpdate
+
   case object NoUpdate extends StateUpdate
 
   def updateRequestStatus(requestStatus: RequestStatus): StateUpdate =
@@ -38,6 +44,13 @@ object StateUpdate {
     copyStatus: CopyStatus
   ): StateUpdate =
     UpdateRequestAndCopyStatuses(requestStatus, copyStatus)
+
+  def updateRequestAndOpenRequestsAndCopyStatuses(
+    requestStatus: RequestStatus,
+    openRequestsStatus: RequestStatus,
+    copyStatus: CopyStatus
+  ): StateUpdate =
+    UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus)
 
   def noUpdate: StateUpdate =
     NoUpdate

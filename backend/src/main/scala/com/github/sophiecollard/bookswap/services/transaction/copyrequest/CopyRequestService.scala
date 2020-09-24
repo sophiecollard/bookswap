@@ -15,8 +15,8 @@ import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
-import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate.{NoUpdate, UpdateRequestAndCopyStatuses, UpdateRequestAndNextRequestStatuses, UpdateRequestStatus}
-import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.{InvalidState, InitialState, StateMachine, StateUpdate}
+import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate._
+import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state._
 import com.github.sophiecollard.bookswap.syntax.EitherTSyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
@@ -140,6 +140,11 @@ object CopyRequestService {
               (requestStatus, initialState.copyStatus)
           case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
             copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRepository.updateStatus(copyId, copyStatus) as
+              (requestStatus, copyStatus)
+          case UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRequestRepository.updateOpenRequestsStatuses(copyId, openRequestsStatus) >>
               copyRepository.updateStatus(copyId, copyStatus) as
               (requestStatus, copyStatus)
           case NoUpdate =>
