@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.services.transaction.copyrequest
 
 import java.time.ZoneId
 
-import cats.Monad
+import cats.{Monad, ~>}
 import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
@@ -14,6 +14,7 @@ import com.github.sophiecollard.bookswap.error.Error.{ResourceNotFound, Transact
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
+import com.github.sophiecollard.bookswap.services.syntax._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state._
@@ -55,11 +56,12 @@ object CopyRequestService {
 
   type Statuses = (RequestStatus, CopyStatus)
 
-  def create[F[_]: Monad](
+  def create[F[_]: Monad, G[_]: Monad](
     requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
     copyOwnerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
-    copyRequestRepository: CopyRequestRepository[F],
-    copyRepository: CopyRepository[F]
+    copyRequestRepository: CopyRequestRepository[G],
+    copyRepository: CopyRepository[G],
+    transactor: G ~> F
   )(
     implicit zoneId: ZoneId // TODO Include in config object
   ): CopyRequestService[F] = {
@@ -75,6 +77,7 @@ object CopyRequestService {
 
         copyRequestRepository
           .create(copyRequest)
+          .transact(transactor)
           .map(_ => copyRequest.asRight[TransactionError])
       }
 
@@ -107,12 +110,15 @@ object CopyRequestService {
           for {
             copyRequest <- copyRequestRepository
               .get(requestId)
+              .transact(transactor)
               .asEitherT[TransactionError](ResourceNotFound("CopyRequest", requestId))
             copy <- copyRepository
               .get(copyRequest.copyId)
+              .transact(transactor)
               .asEitherT[TransactionError](ResourceNotFound("Copy", copyRequest.copyId))
             maybeNextCopyRequest <- copyRequestRepository
               .findFirstOnWaitingList(copy.id)
+              .transact(transactor)
               .liftToEitherT[TransactionError]
             initialState = InitialState(copyRequest.status, maybeNextCopyRequest.map(r =>(r.id, r.status)), copy.status)
             statuses <- handler(initialState)
@@ -129,29 +135,30 @@ object CopyRequestService {
         initialState: InitialState
       )(
         stateUpdate: StateUpdate
-      ): F[Statuses] = {
-        stateUpdate match {
-          case UpdateRequestStatus(requestStatus) =>
-            copyRequestRepository.updateStatus(requestId, requestStatus) as
-              (requestStatus, initialState.copyStatus)
-          case UpdateRequestAndNextRequestStatuses(requestStatus, nextRequestId, nextRequestStatus) =>
-            copyRequestRepository.updateStatus(requestId, requestStatus) >>
-              copyRequestRepository.updateStatus(nextRequestId, nextRequestStatus) as
-              (requestStatus, initialState.copyStatus)
-          case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
-            copyRequestRepository.updateStatus(requestId, requestStatus) >>
-              copyRepository.updateStatus(copyId, copyStatus) as
-              (requestStatus, copyStatus)
-          case UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus) =>
-            copyRequestRepository.updateStatus(requestId, requestStatus) >>
-              copyRequestRepository.updateOpenRequestsStatuses(copyId, openRequestsStatus) >>
-              copyRepository.updateStatus(copyId, copyStatus) as
-              (requestStatus, copyStatus)
-          case NoUpdate =>
-            (initialState.requestStatus, initialState.copyStatus)
-              .pure[F]
-        }
-      }
+      ): F[Statuses] =
+        (
+          stateUpdate match {
+            case UpdateRequestStatus(requestStatus) =>
+              copyRequestRepository.updateStatus(requestId, requestStatus) as
+                (requestStatus, initialState.copyStatus)
+            case UpdateRequestAndNextRequestStatuses(requestStatus, nextRequestId, nextRequestStatus) =>
+              copyRequestRepository.updateStatus(requestId, requestStatus) >>
+                copyRequestRepository.updateStatus(nextRequestId, nextRequestStatus) as
+                (requestStatus, initialState.copyStatus)
+            case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
+              copyRequestRepository.updateStatus(requestId, requestStatus) >>
+                copyRepository.updateStatus(copyId, copyStatus) as
+                (requestStatus, copyStatus)
+            case UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus) =>
+              copyRequestRepository.updateStatus(requestId, requestStatus) >>
+                copyRequestRepository.updateOpenRequestsStatuses(copyId, openRequestsStatus) >>
+                copyRepository.updateStatus(copyId, copyStatus) as
+                (requestStatus, copyStatus)
+            case NoUpdate =>
+              (initialState.requestStatus, initialState.copyStatus)
+                .pure[G]
+          }
+        ).transact(transactor)
     }
   }
 
