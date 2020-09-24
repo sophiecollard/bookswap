@@ -17,6 +17,11 @@ trait CopyRequestRepository[F[_]] {
   def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Unit]
 
   /**
+    * Updates the statuses of all open requests (i.e. pending or on the waiting list) for the specified copy
+    */
+  def updateOpenRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
+
+  /**
     * Returns the specified request (if any)
     */
   def get(id: Id[CopyRequest]): F[Option[CopyRequest]]

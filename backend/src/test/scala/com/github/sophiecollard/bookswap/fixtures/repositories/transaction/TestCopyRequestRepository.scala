@@ -3,6 +3,7 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.transaction
 import cats.{Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus.{OnWaitingList, Pending}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 
@@ -17,6 +18,16 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
         store += ((id, copyRequest.copy(status = newStatus)))
       case None =>
         ()
+    }
+
+  def updateOpenRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+    store = store.map { case (id, request) =>
+      request.status match {
+        case Pending | OnWaitingList(_) =>
+          (id, request.copy(status = newStatus))
+        case _ =>
+          (id, request)
+      }
     }
 
   def get(id: Id[CopyRequest]): CatsId[Option[CopyRequest]] =
