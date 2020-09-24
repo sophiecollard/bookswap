@@ -28,9 +28,14 @@ package object authorization {
       case Failure(error)  => Left(error)
     }
 
-    final def getResult: R = this match {
+    final def unsafeResult: R = this match {
       case Success(result) => result
-      case Failure(error)  => throw new RuntimeException(s"AuthorizationError: $error")
+      case Failure(_)      => throw new RuntimeException("Authorization was a Failure")
+    }
+
+    final def unsafeError: AuthorizationError = this match {
+      case Success(_)     => throw new RuntimeException("Authorization was a Success")
+      case Failure(error) => error
     }
   }
 
