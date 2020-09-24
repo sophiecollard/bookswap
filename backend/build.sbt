@@ -4,7 +4,8 @@ scalaVersion := "2.13.3"
 
 libraryDependencies ++= Seq(
   "com.beachape" %% "enumeratum" % "1.6.1",
-  "org.typelevel" %% "cats-core" % "2.0.0"
+  "org.typelevel" %% "cats-core" % "2.0.0",
+  "org.scalatest" %% "scalatest" % "3.2.0" % "test"
 )
 
 scalacOptions ++= Seq(
