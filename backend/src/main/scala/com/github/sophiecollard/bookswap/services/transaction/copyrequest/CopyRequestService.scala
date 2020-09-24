@@ -108,18 +108,19 @@ object CopyRequestService {
       ): F[TransactionErrorOr[Statuses]] =
         (
           for {
-            copyRequest <- copyRequestRepository
-              .get(requestId)
-              .transact(transactor)
-              .asEitherT[TransactionError](ResourceNotFound("CopyRequest", requestId))
-            copy <- copyRepository
-              .get(copyRequest.copyId)
-              .transact(transactor)
-              .asEitherT[TransactionError](ResourceNotFound("Copy", copyRequest.copyId))
-            maybeNextCopyRequest <- copyRequestRepository
-              .findFirstOnWaitingList(copy.id)
-              .transact(transactor)
-              .liftToEitherT[TransactionError]
+            (copyRequest, copy, maybeNextCopyRequest) <- (
+              for {
+                copyRequest <- copyRequestRepository
+                  .get(requestId)
+                  .asEitherT[TransactionError](ResourceNotFound("CopyRequest", requestId))
+                copy <- copyRepository
+                  .get(copyRequest.copyId)
+                  .asEitherT[TransactionError](ResourceNotFound("Copy", copyRequest.copyId))
+                maybeNextCopyRequest <- copyRequestRepository
+                  .findFirstOnWaitingList(copy.id)
+                  .liftToEitherT[TransactionError]
+              } yield (copyRequest, copy, maybeNextCopyRequest)
+            ).mapK[F](transactor)
             initialState = InitialState(copyRequest.status, maybeNextCopyRequest.map(r =>(r.id, r.status)), copy.status)
             statuses <- handler(initialState)
               .pure[F]
