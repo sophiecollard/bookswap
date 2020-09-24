@@ -1,11 +1,10 @@
 package com.github.sophiecollard.bookswap.repositories.inventory
 
-import cats.effect.Sync
 import doobie.implicits._
 import doobie.implicits.javatime._
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
-import doobie.{Query0, Transactor, Update0}
+import doobie.{ConnectionIO, Query0, Update0}
 
 trait CopyRepository[F[_]] {
 
@@ -18,23 +17,20 @@ trait CopyRepository[F[_]] {
 }
 
 object CopyRepository {
-  def create[F[_]: Sync](transactor: Transactor[F]): CopyRepository[F] = new CopyRepository[F] {
-    override def create(copy: Copy): F[Unit] =
+  def create: CopyRepository[ConnectionIO] = new CopyRepository[ConnectionIO] {
+    override def create(copy: Copy): ConnectionIO[Unit] =
       insertCopyUpdate(copy)
         .run
         .map(_ => ())
-        .transact(transactor)
 
-    override def updateStatus(id: Id[Copy], newStatus: CopyStatus): F[Unit] =
+    override def updateStatus(id: Id[Copy], newStatus: CopyStatus): ConnectionIO[Unit] =
       updateStatusUpdate(id, newStatus)
         .run
         .map(_ => ())
-        .transact(transactor)
 
-    override def get(id: Id[Copy]): F[Option[Copy]] =
+    override def get(id: Id[Copy]): ConnectionIO[Option[Copy]] =
       getQuery(id)
         .option
-        .transact(transactor)
   }
 
   def insertCopyUpdate(copy: Copy): Update0 =

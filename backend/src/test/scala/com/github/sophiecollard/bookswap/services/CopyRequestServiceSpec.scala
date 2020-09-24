@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.services
 
 import java.time.{LocalDateTime, ZoneId}
 
-import cats.{Id => CatsId}
+import cats.{Id => CatsId, ~>}
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
@@ -409,12 +409,18 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
+    private val catsIdTransactor = new ~>[CatsId, CatsId] {
+      override def apply[T](f : CatsId[T]): CatsId[T] =
+        f
+    }
+
     val copyRequestService: CopyRequestService[CatsId] =
       CopyRequestService.create(
         requestIssuerAuthorizationService = Authorization.createRequestIssuerAuthorizationService(copyRequestRepository),
         copyOwnerAuthorizationService = Authorization.createCopyOwnerAuthorizationService(copyRequestRepository, copyRepository),
         copyRequestRepository,
-        copyRepository
+        copyRepository,
+        catsIdTransactor
       )
 
     val (copyId, requestId, nextRequestId) = (Id.generate[Copy], Id.generate[CopyRequest], Id.generate[CopyRequest])
