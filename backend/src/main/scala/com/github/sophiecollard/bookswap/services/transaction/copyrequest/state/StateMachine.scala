@@ -11,29 +11,33 @@ object StateMachine {
 
   def handleCancelCommand(initialState: InitialState)(implicit zoneId: ZoneId): Either[InvalidState, StateUpdate] =
     initialState match {
-      case InitialState(Cancelled(_), _, _) | InitialState(Fulfilled(_), _, Swapped) =>
-        StateUpdate.noUpdate.asRight
       case InitialState(Accepted(_), Some((nextRequestId, OnWaitingList(_))), Reserved) =>
         StateUpdate.updateRequestAndNextRequestStatuses(Cancelled(now), nextRequestId, Accepted(now)).asRight
       case InitialState(Accepted(_), None, Reserved) =>
         StateUpdate.updateRequestAndCopyStatuses(Cancelled(now), Available).asRight
       case InitialState(Pending, _, Available) |
            InitialState(Pending, _, Reserved) |
-           InitialState(OnWaitingList(_), _, Reserved) =>
+           InitialState(OnWaitingList(_), _, Reserved) |
+           InitialState(Rejected(_), _, _) =>
         StateUpdate.updateRequestStatus(Cancelled(now)).asRight
+      case InitialState(Cancelled(_), _, _) |
+           InitialState(Fulfilled(_), _, Swapped) =>
+        StateUpdate.noUpdate.asRight
       case _ =>
         InvalidState(initialState.requestStatus, initialState.copyStatus).asLeft
     }
 
   def handleAcceptCommand(initialState: InitialState)(implicit zoneId: ZoneId): Either[InvalidState, StateUpdate] =
     initialState match {
-      case InitialState(Cancelled(_), _, _) | InitialState(Fulfilled(_), _, Swapped) =>
-        StateUpdate.noUpdate.asRight
       case InitialState(Pending, _, Available) | InitialState(Rejected(_), _, Available) =>
         StateUpdate.updateRequestAndCopyStatuses(Accepted(now), Reserved).asRight
       case InitialState(Pending, _, Reserved) | InitialState(Rejected(_), _, Reserved) =>
         StateUpdate.updateRequestStatus(OnWaitingList(now)).asRight
-      case InitialState(Accepted(_), _, Reserved) | InitialState(OnWaitingList(_), _, Reserved) =>
+      case InitialState(Accepted(_), _, Reserved) |
+           InitialState(OnWaitingList(_), _, Reserved) |
+           InitialState(Rejected(_), _, _) |
+           InitialState(Cancelled(_), _, _) |
+           InitialState(Fulfilled(_), _, Swapped) =>
         StateUpdate.noUpdate.asRight
       case _ =>
         InvalidState(initialState.requestStatus, initialState.copyStatus).asLeft
@@ -41,8 +45,6 @@ object StateMachine {
 
   def handleRejectCommand(initialState: InitialState)(implicit zoneId: ZoneId): Either[InvalidState, StateUpdate] =
     initialState match {
-      case InitialState(Cancelled(_), _, _) | InitialState(Fulfilled(_), _, Swapped) =>
-        StateUpdate.noUpdate.asRight
       case InitialState(Accepted(_), Some((nextRequestId, OnWaitingList(_))), Reserved) =>
         StateUpdate.updateRequestAndNextRequestStatuses(Rejected(now), nextRequestId, Accepted(now)).asRight
       case InitialState(Accepted(_), None, Reserved) =>
@@ -51,6 +53,10 @@ object StateMachine {
            InitialState(Pending, _, Reserved) |
            InitialState(OnWaitingList(_), _, Reserved) =>
         StateUpdate.updateRequestStatus(Rejected(now)).asRight
+      case InitialState(Rejected(_), _, _) |
+           InitialState(Cancelled(_), _, _) |
+           InitialState(Fulfilled(_), _, Swapped) =>
+        StateUpdate.noUpdate.asRight
       case _ =>
         InvalidState(initialState.requestStatus, initialState.copyStatus).asLeft
     }
@@ -58,7 +64,14 @@ object StateMachine {
   def handleMarkAsFulfilledCommand(initialState: InitialState)(implicit zoneId: ZoneId): Either[InvalidState, StateUpdate] =
     initialState match {
       case InitialState(Accepted(_), _, Reserved) =>
-        StateUpdate.updateRequestAndCopyStatuses(Fulfilled(now), Swapped).asRight
+        StateUpdate.updateRequestAndOpenRequestsAndCopyStatuses(Fulfilled(now), Rejected(now), Swapped).asRight
+      case InitialState(Pending, _, Available) |
+           InitialState(Pending, _, Reserved) |
+           InitialState(OnWaitingList(_), _, Reserved) |
+           InitialState(Rejected(_), _, _) |
+           InitialState(Cancelled(_), _, _) |
+           InitialState(Fulfilled(_), _, Swapped) =>
+        StateUpdate.noUpdate.asRight
       case _ =>
         InvalidState(initialState.requestStatus, initialState.copyStatus).asLeft
     }
