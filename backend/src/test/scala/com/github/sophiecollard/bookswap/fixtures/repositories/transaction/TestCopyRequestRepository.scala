@@ -26,7 +26,7 @@ object TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
     store
       .values
       .toList
-      .filter(_.copyId == copyId)
+      .filter(r => r.copyId == copyId && r.status.isOnWaitingList)
       .sortBy(_.requestedOn)
       .headOption
 
