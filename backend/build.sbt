@@ -3,6 +3,7 @@ name := "BookSwap"
 scalaVersion := "2.13.3"
 
 libraryDependencies ++= {
+  val catsVersion = "2.2.0"
   val doobieVersion = "0.9.0"
 
   Seq(
@@ -11,7 +12,8 @@ libraryDependencies ++= {
     "org.tpolecat"  %% "doobie-hikari"    % doobieVersion,
     "org.tpolecat"  %% "doobie-postgres"  % doobieVersion,
     "org.tpolecat"  %% "doobie-scalatest" % doobieVersion,
-    "org.typelevel" %% "cats-core"        % "2.0.0",
+    "org.typelevel" %% "cats-core"        % catsVersion,
+    "org.typelevel" %% "cats-effect"      % catsVersion,
     "org.scalatest" %% "scalatest"        % "3.2.0" % Test
   )
 }
