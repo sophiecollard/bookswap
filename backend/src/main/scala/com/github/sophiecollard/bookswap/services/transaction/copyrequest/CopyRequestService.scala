@@ -152,7 +152,8 @@ object CopyRequestService {
                 (requestStatus, copyStatus)
             case UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus) =>
               copyRequestRepository.updateStatus(requestId, requestStatus) >>
-                copyRequestRepository.updateOpenRequestsStatuses(copyId, openRequestsStatus) >>
+                copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
+                copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
                 copyRepository.updateStatus(copyId, copyStatus) as
                 (requestStatus, copyStatus)
             case NoUpdate =>

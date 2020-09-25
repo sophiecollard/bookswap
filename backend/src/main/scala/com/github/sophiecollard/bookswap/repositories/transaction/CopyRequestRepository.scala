@@ -20,9 +20,19 @@ trait CopyRequestRepository[F[_]] {
   def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Unit]
 
   /**
-    * Updates the statuses of all open requests (i.e. pending or on the waiting list) for the specified copy
+    * Updates the statuses of all pending requests for the specified copy
     */
-  def updateOpenRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
+  def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
+
+  /**
+    * Updates the status of any accepted request for the specified copy
+    */
+  def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
+
+  /**
+    * Updates the statuses of all requests on the waiting list for the specified copy
+    */
+  def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
   /**
     * Returns the specified request (if any)
@@ -49,8 +59,18 @@ object CopyRequestRepository {
         .run(newStatus)
         .map(_ => ())
 
-    override def updateOpenRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): ConnectionIO[Unit] =
-      updateOpenRequestsStatusesUpdate(copyId)
+    override def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): ConnectionIO[Unit] =
+      updatePendingRequestsStatusesUpdate(copyId)
+        .run(newStatus)
+        .map(_ => ())
+
+    override def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): ConnectionIO[Unit] =
+      updateAcceptedRequestsStatusesUpdate(copyId)
+        .run(newStatus)
+        .map(_ => ())
+
+    override def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): ConnectionIO[Unit] =
+      updateWaitingListRequestsStatusesUpdate(copyId)
         .run(newStatus)
         .map(_ => ())
 
@@ -81,14 +101,33 @@ object CopyRequestRepository {
        """.stripMargin
     )
 
-  def updateOpenRequestsStatusesUpdate(copyId: Id[Copy]): Update[RequestStatus] =
+  def updatePendingRequestsStatusesUpdate(copyId: Id[Copy]): Update[RequestStatus] =
     Update[RequestStatus](
       s"""
          |UPDATE copy_requests
          |SET (status_name, status_timestamp) = (?, ?)
          |WHERE copy_id = $copyId
          |AND status_name = 'pending'
-         |OR status_name = 'on_waiting_list'
+       """.stripMargin
+    )
+
+  def updateAcceptedRequestsStatusesUpdate(copyId: Id[Copy]): Update[RequestStatus] =
+    Update[RequestStatus](
+      s"""
+         |UPDATE copy_requests
+         |SET (status_name, status_timestamp) = (?, ?)
+         |WHERE copy_id = $copyId
+         |AND status_name = 'accepted'
+       """.stripMargin
+    )
+
+  def updateWaitingListRequestsStatusesUpdate(copyId: Id[Copy]): Update[RequestStatus] =
+    Update[RequestStatus](
+      s"""
+         |UPDATE copy_requests
+         |SET (status_name, status_timestamp) = (?, ?)
+         |WHERE copy_id = $copyId
+         |AND status_name = 'on_waiting_list'
        """.stripMargin
     )
 

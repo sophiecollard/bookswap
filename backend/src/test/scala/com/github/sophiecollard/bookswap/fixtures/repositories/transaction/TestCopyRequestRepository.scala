@@ -3,7 +3,7 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.transaction
 import cats.{Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
-import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus.{OnWaitingList, Pending}
+import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus.{Accepted, OnWaitingList, Pending}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 
@@ -20,10 +20,30 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
         ()
     }
 
-  def updateOpenRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+  def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
     store = store.map { case (id, request) =>
       request.status match {
-        case Pending | OnWaitingList(_) =>
+        case Pending =>
+          (id, request.copy(status = newStatus))
+        case _ =>
+          (id, request)
+      }
+    }
+
+  def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+    store = store.map { case (id, request) =>
+      request.status match {
+        case Accepted(_) =>
+          (id, request.copy(status = newStatus))
+        case _ =>
+          (id, request)
+      }
+    }
+
+  def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+    store = store.map { case (id, request) =>
+      request.status match {
+        case OnWaitingList(_) =>
           (id, request.copy(status = newStatus))
         case _ =>
           (id, request)
