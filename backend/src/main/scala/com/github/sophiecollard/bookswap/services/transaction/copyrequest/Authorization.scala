@@ -5,7 +5,7 @@ import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheCopyOwner, NotTheRequestIssuer}
+import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheRequestedCopyOwner, NotTheRequestIssuer}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization.{AuthorizationService, WithAuthorization}
@@ -35,7 +35,7 @@ object Authorization {
         case Some(copyOwnerId) if copyOwnerId == userId =>
           Right(())
         case _ =>
-          Left(NotTheCopyOwner(userId, copyRequestId))
+          Left(NotTheRequestedCopyOwner(userId, copyRequestId))
       }
     }
 

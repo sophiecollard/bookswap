@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheCopyOwner, NotTheRequestIssuer}
+import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheRequestedCopyOwner, NotTheRequestIssuer}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.{Authorization, CopyRequestService}
@@ -131,7 +131,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       val authorizationResult = copyRequestService.accept(requestId)(requestIssuerId)
 
       assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheCopyOwner(requestIssuerId, requestId)
+      authorizationResult.unsafeError shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
     }
 
     "accept a pending request" in new WithRequestPending {
@@ -224,7 +224,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       val authorizationResult = copyRequestService.reject(requestId)(requestIssuerId)
 
       assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheCopyOwner(requestIssuerId, requestId)
+      authorizationResult.unsafeError shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
     }
 
     "reject a pending request" in new WithRequestPending {
@@ -322,7 +322,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       val authorizationResult = copyRequestService.markAsFulfilled(requestId)(requestIssuerId)
 
       assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheCopyOwner(requestIssuerId, requestId)
+      authorizationResult.unsafeError shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
     }
 
     "mark an accepted request as fulfilled and reject all requests still pending or on the waiting list" in
