@@ -12,33 +12,41 @@ object Error {
 
   sealed abstract class AuthorizationError(override val message: String) extends Error
 
-  final case class NotAnAdmin(userId: Id[User])
-    extends AuthorizationError(
-      message = s"User [${userId.value}] is not an admin."
-    )
-
-  final case class NotTheCopyOwner(userId: Id[User], copyRequestId: Id[CopyRequest])
-    extends AuthorizationError(
-      message = s"User [${userId.value}] is not the owner of the copy requested in CopyRequest [${copyRequestId.value}]."
-    )
-
-  final case class NotTheRequestIssuer(userId: Id[User], copyRequestId: Id[CopyRequest])
-    extends AuthorizationError(
-      message = s"User [${userId.value}] did not issue CopyRequest [${copyRequestId.value}]."
-    )
-
   type AuthorizationErrorOr[A] = Either[AuthorizationError, A]
+
+  object AuthorizationError {
+
+    final case class NotAnAdmin(userId: Id[User])
+      extends AuthorizationError(
+        message = s"User [${userId.value}] is not an admin."
+      )
+
+    final case class NotTheCopyOwner(userId: Id[User], copyRequestId: Id[CopyRequest])
+      extends AuthorizationError(
+        message = s"User [${userId.value}] is not the owner of the copy requested in CopyRequest [${copyRequestId.value}]."
+      )
+
+    final case class NotTheRequestIssuer(userId: Id[User], copyRequestId: Id[CopyRequest])
+      extends AuthorizationError(
+        message = s"User [${userId.value}] did not issue CopyRequest [${copyRequestId.value}]."
+      )
+
+  }
 
   sealed abstract class TransactionError(override val message: String) extends Error
 
-  final case class InvalidState(override val message: String)
-    extends TransactionError(message)
-
-  final case class ResourceNotFound[A](resourceName: String, id: Id[A])
-    extends TransactionError(
-      message = s"$resourceName [${id.value}] was not found."
-    )
-
   type TransactionErrorOr[A] = Either[TransactionError, A]
+
+  object TransactionError {
+
+    final case class InvalidState(override val message: String)
+      extends TransactionError(message)
+
+    final case class ResourceNotFound[A](resourceName: String, id: Id[A])
+      extends TransactionError(
+        message = s"$resourceName [${id.value}] was not found."
+      )
+
+  }
 
 }

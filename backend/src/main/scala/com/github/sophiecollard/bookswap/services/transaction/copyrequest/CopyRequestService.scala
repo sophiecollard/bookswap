@@ -9,8 +9,8 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error
-import com.github.sophiecollard.bookswap.error.Error.{ResourceNotFound, TransactionError, TransactionErrorOr}
+import com.github.sophiecollard.bookswap.error.Error.TransactionError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.Error.{TransactionError, TransactionErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
@@ -125,7 +125,7 @@ object CopyRequestService {
             statuses <- handler(initialState)
               .pure[F]
               .asEitherT
-              .leftMap[TransactionError](_ => Error.InvalidState(s"Invalid state: $initialState"))
+              .leftMap[TransactionError](_ => TransactionError.InvalidState(s"Invalid state: $initialState"))
               .semiflatMap(performStateUpdate(copyRequest.id, copy.id, initialState))
           } yield statuses
         ).value

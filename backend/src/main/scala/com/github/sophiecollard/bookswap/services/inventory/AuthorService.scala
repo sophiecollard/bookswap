@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.domain.user.UserStatus.Admin
-import com.github.sophiecollard.bookswap.error.Error.NotAnAdmin
+import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.NotAnAdmin
 import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
 import com.github.sophiecollard.bookswap.services.authorization._
