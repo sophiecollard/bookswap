@@ -36,10 +36,10 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'create' method" should {
     "create a new copy request" in new WithBasicSetup {
-      val result = copyService.create(copy.edition, copy.condition)(copyOwnerId)
+      val result = copyService.create(copy.isbn, copy.condition)(copyOwnerId)
 
       assert(result.isRight)
-      assert(result.toOption.get.edition == copy.edition)
+      assert(result.toOption.get.isbn == copy.isbn)
       assert(result.toOption.get.offeredBy == copyOwnerId)
       assert(result.toOption.get.condition == copy.condition)
       assert(result.toOption.get.status == initialCopyStatus)
@@ -132,7 +132,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     val copy = Copy(
       id = copyId,
-      edition = ISBN.unvalidated("9781784875435"),
+      isbn = ISBN.unvalidated("9781784875435"),
       offeredBy = copyOwnerId,
       offeredOn = LocalDateTime.of(2019, 7, 13, 13, 0, 0),
       condition = Condition.BrandNew,

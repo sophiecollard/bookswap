@@ -448,7 +448,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     private val copy = Copy(
       id = copyId,
-      edition = ISBN.unvalidated("9781784875435"),
+      isbn = ISBN.unvalidated("9781784875435"),
       offeredBy = copyOwnerId,
       offeredOn = LocalDateTime.of(2019, 7, 13, 13, 0, 0),
       condition = Condition.BrandNew,

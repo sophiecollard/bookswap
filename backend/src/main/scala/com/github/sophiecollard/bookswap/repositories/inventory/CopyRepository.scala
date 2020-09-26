@@ -36,8 +36,8 @@ object CopyRepository {
 
   def insertCopyUpdate(copy: Copy): Update0 =
     sql"""
-         |INSERT INTO copies (id, edition, offered_by, offered_on, condition, status)
-         |VALUES (${copy.id}, ${copy.edition}, ${copy.offeredBy}, ${copy.offeredOn}, ${copy.condition}, ${copy.status})
+         |INSERT INTO copies (id, isbn, offered_by, offered_on, condition, status)
+         |VALUES (${copy.id}, ${copy.isbn}, ${copy.offeredBy}, ${copy.offeredOn}, ${copy.condition}, ${copy.status})
          |ON CONFLICT id DO NOTHING
        """.stripMargin.update
 
@@ -50,7 +50,7 @@ object CopyRepository {
 
   def getQuery(id: Id[Copy]): Query0[Copy] =
     sql"""
-         |SELECT id, edition, offered_by, offered_on, condition, status
+         |SELECT id, isbn, offered_by, offered_on, condition, status
          |FROM copies
          |WHERE id = $id
        """.stripMargin.query[Copy]

@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.domain.user.User
 
 final case class Copy(
   id: Id[Copy],
-  edition: ISBN,
+  isbn: ISBN,
   offeredBy: Id[User],
   offeredOn: LocalDateTime,
   condition: Condition,
