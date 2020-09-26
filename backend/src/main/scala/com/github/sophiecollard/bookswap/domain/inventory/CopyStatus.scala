@@ -15,4 +15,9 @@ object CopyStatus extends StringEnum[CopyStatus] with StringDoobieEnum[CopyStatu
 
   override val values: immutable.IndexedSeq[CopyStatus] = findValues
 
+  def available: CopyStatus = Available
+  def reserved: CopyStatus = Reserved
+  def swapped: CopyStatus = Swapped
+  def withdrawn: CopyStatus = Withdrawn
+
 }

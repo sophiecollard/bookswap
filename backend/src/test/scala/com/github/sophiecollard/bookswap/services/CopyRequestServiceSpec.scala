@@ -18,12 +18,13 @@ import org.scalatest.wordspec.AnyWordSpec
 class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'create' method" should {
-    "create a new copy request" in new WithRequestPending {
+    "create a new copy request" in new WithBasicSetup {
       val result = copyRequestService.create(copyId)(requestIssuerId)
 
       assert(result.isRight)
       assert(result.toOption.get.copyId == copyId)
       assert(result.toOption.get.requestedBy == requestIssuerId)
+      assert(result.toOption.get.status == initialRequestStatus)
     }
   }
 
@@ -403,7 +404,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  trait BasicSetup {
+  trait WithBasicSetup {
     val copyRepository = new TestCopyRepository
     val copyRequestRepository = new TestCopyRequestRepository
 
@@ -425,7 +426,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     val (copyId, requestId, nextRequestId) = (Id.generate[Copy], Id.generate[CopyRequest], Id.generate[CopyRequest])
     val (copyOwnerId, requestIssuerId, nextRequestIssuerId) = (Id.generate[User], Id.generate[User], Id.generate[User])
-    val initialCopyStatus: CopyStatus = CopyStatus.Available
+    val initialCopyStatus = CopyStatus.available
     val (initialRequestStatus, initialNextRequestStatus) = (RequestStatus.pending, RequestStatus.pending)
 
     private val copy = Copy(
@@ -437,7 +438,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       status = initialCopyStatus
     )
 
-    private val copyRequest = CopyRequest(
+    val copyRequest = CopyRequest(
       id = requestId,
       copyId = copy.id,
       requestedBy = requestIssuerId,
@@ -445,7 +446,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       status = initialRequestStatus
     )
 
-    private val nextCopyRequest = CopyRequest(
+    val nextCopyRequest = CopyRequest(
       id = nextRequestId,
       copyId = copy.id,
       requestedBy = nextRequestIssuerId,
@@ -454,15 +455,16 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     )
 
     copyRepository.create(copy)
+  }
+
+  trait WithRequestPending extends WithBasicSetup {
     copyRequestRepository.create(copyRequest)
     copyRequestRepository.create(nextCopyRequest)
   }
 
-  trait WithRequestPending extends BasicSetup
-
-  trait WithRequestAccepted extends BasicSetup {
+  trait WithRequestAccepted extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.accepted(now)
-    override val initialCopyStatus = CopyStatus.Reserved
+    override val initialCopyStatus = CopyStatus.reserved
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
     copyRepository.updateStatus(copyId, initialCopyStatus)
   }
@@ -472,24 +474,24 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     copyRequestRepository.updateStatus(nextRequestId, initialNextRequestStatus)
   }
 
-  trait WithRequestOnWaitingList extends BasicSetup {
+  trait WithRequestOnWaitingList extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.onWaitingList(now)
-    override val initialCopyStatus = CopyStatus.Reserved
+    override val initialCopyStatus = CopyStatus.reserved
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
     copyRepository.updateStatus(copyId, initialCopyStatus)
   }
 
-  trait WithRequestRejected extends BasicSetup {
+  trait WithRequestRejected extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.rejected(now)
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
   }
 
-  trait WithRequestCancelled extends BasicSetup {
+  trait WithRequestCancelled extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.cancelled(now)
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
   }
 
-  trait WithRequestFulfilled extends BasicSetup {
+  trait WithRequestFulfilled extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.fulfilled(now)
     override val initialCopyStatus = CopyStatus.Swapped
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
