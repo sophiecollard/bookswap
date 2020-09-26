@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.services
+package com.github.sophiecollard.bookswap.services.inventory.copy
 
 import java.time.{LocalDateTime, ZoneId}
 
@@ -10,7 +10,6 @@ import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.NotTheCopyOwner
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
-import com.github.sophiecollard.bookswap.services.inventory.copy.{Authorization, CopyService}
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

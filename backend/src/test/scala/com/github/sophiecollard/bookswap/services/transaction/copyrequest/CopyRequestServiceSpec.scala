@@ -1,16 +1,15 @@
-package com.github.sophiecollard.bookswap.services
+package com.github.sophiecollard.bookswap.services.transaction.copyrequest
 
 import java.time.{LocalDateTime, ZoneId}
 
-import cats.{Id => CatsId, ~>}
+import cats.{~>, Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheRequestedCopyOwner, NotTheRequestIssuer}
+import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheRequestIssuer, NotTheRequestedCopyOwner}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
-import com.github.sophiecollard.bookswap.services.transaction.copyrequest.{Authorization, CopyRequestService}
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
