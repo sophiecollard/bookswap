@@ -8,6 +8,7 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.NotTheCopyOwner
+import com.github.sophiecollard.bookswap.error.Error.TransactionError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
@@ -15,6 +16,23 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class CopyServiceSpec extends AnyWordSpec with Matchers {
+
+  "The 'get' method" should {
+    "return a request if found" in new WithCopyAvailable {
+      val result = copyService.get(copyId)
+
+      assert(result.isRight)
+      assert(result.toOption.get == copy)
+    }
+
+    "return an error if not found" in new WithCopyAvailable {
+      val otherCopyId = Id.generate[Copy]
+      val result = copyService.get(otherCopyId)
+
+      assert(result.isLeft)
+      assert(result.swap.toOption.get == ResourceNotFound("Copy", otherCopyId))
+    }
+  }
 
   "The 'create' method" should {
     "create a new copy request" in new WithBasicSetup {

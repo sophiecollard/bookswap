@@ -22,8 +22,13 @@ import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 
 trait CopyService[F[_]] {
 
+  /** Fetches a Copy */
+  def get(id: Id[Copy]): F[TransactionErrorOr[Copy]]
+
+  /** Invoked by a registered user to create a new Copy */
   def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[TransactionErrorOr[Copy]]
 
+  /** Invoked by the Copy owner to withdraw that Copy */
   def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[CopyStatus]]]
 
 }
@@ -38,6 +43,12 @@ object CopyService {
   )(
     implicit zoneId: ZoneId
   ): CopyService[F] = new CopyService[F] {
+    override def get(id: Id[Copy]): F[TransactionErrorOr[Copy]] =
+      copyRepository
+        .get(id)
+        .map(_.toRight[TransactionError](ResourceNotFound("Copy", id)))
+        .transact(transactor)
+
     override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[TransactionErrorOr[Copy]] = {
       val copy = Copy(
         id = Id.generate[Copy],
