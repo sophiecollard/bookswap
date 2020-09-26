@@ -25,29 +25,19 @@ trait CopyRequestService[F[_]] {
 
   import CopyRequestService.Statuses
 
-  /**
-    * Invoked by a registered user to create a new CopyRequest.
-    */
+  /** Invoked by a registered user to create a new CopyRequest */
   def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
 
-  /**
-    * Invoked by a registered user to cancel one of their CopyRequests.
-    */
+  /** Invoked by a registered user to cancel one of their CopyRequests */
   def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[Statuses]]]
 
-  /**
-    * Invoked by the Copy owner to accept a CopyRequest.
-    */
+  /** Invoked by the Copy owner to accept a CopyRequest */
   def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
 
-  /**
-    * Invoked by the Copy owner to reject CopyRequest.
-    */
+  /** Invoked by the Copy owner to reject CopyRequest */
   def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
 
-  /**
-    * Invoked by the Copy owner to mark a CopyRequest as fulfilled.
-    */
+  /** Invoked by the Copy owner to mark a CopyRequest as fulfilled */
   def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
 
 }
