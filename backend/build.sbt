@@ -4,11 +4,14 @@ scalaVersion := "2.13.3"
 
 libraryDependencies ++= {
   val catsVersion = "2.2.0"
+  val circeVersion = "0.12.3"
   val doobieVersion = "0.9.0"
 
   Seq(
     "com.beachape"  %% "enumeratum"        % "1.6.1",
     "com.beachape"  %% "enumeratum-doobie" % "1.6.0",
+    "io.circe"      %% "circe-core"        % circeVersion,
+    "io.circe"      %% "circe-parser"      % circeVersion,
     "org.tpolecat"  %% "doobie-core"       % doobieVersion,
     "org.tpolecat"  %% "doobie-hikari"     % doobieVersion,
     "org.tpolecat"  %% "doobie-postgres"   % doobieVersion,
