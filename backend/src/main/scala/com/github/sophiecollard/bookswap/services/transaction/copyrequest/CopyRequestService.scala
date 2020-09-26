@@ -25,6 +25,9 @@ trait CopyRequestService[F[_]] {
 
   import CopyRequestService.Statuses
 
+  /** Fetches a CopyRequest */
+  def get(id: Id[CopyRequest]): F[TransactionErrorOr[CopyRequest]]
+
   /** Invoked by a registered user to create a new CopyRequest */
   def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
 
@@ -56,6 +59,12 @@ object CopyRequestService {
     implicit zoneId: ZoneId // TODO Include in config object
   ): CopyRequestService[F] = {
     new CopyRequestService[F] {
+      override def get(id: Id[CopyRequest]): F[TransactionErrorOr[CopyRequest]] =
+        copyRequestRepository
+          .get(id)
+          .map(_.toRight[TransactionError](ResourceNotFound("CopyRequest", id)))
+          .transact(transactor)
+
       override def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]] = {
         val copyRequest = CopyRequest(
           id = Id.generate[CopyRequest],
