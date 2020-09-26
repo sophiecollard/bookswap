@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.error
 
-import com.github.sophiecollard.bookswap.domain.inventory.Copy
+import com.github.sophiecollard.bookswap.domain.inventory.{Copy, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import com.github.sophiecollard.bookswap.domain.user.User
@@ -51,6 +51,11 @@ object Error {
     final case class ResourceNotFound[A](resourceName: String, id: Id[A])
       extends TransactionError(
         message = s"$resourceName [${id.value}] was not found."
+      )
+
+    final case class EditionNotFound(isbn: ISBN)
+      extends TransactionError(
+        message = s"Edition [${isbn.value}] was not found."
       )
 
   }
