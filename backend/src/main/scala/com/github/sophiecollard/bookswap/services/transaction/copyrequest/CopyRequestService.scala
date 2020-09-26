@@ -9,8 +9,8 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.TransactionError.ResourceNotFound
-import com.github.sophiecollard.bookswap.error.Error.{TransactionError, TransactionErrorOr}
+import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization._
@@ -26,22 +26,22 @@ trait CopyRequestService[F[_]] {
   import CopyRequestService.Statuses
 
   /** Fetches a CopyRequest */
-  def get(id: Id[CopyRequest]): F[TransactionErrorOr[CopyRequest]]
+  def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]]
 
   /** Invoked by a registered user to create a new CopyRequest */
-  def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]]
+  def create(copyId: Id[Copy])(userId: Id[User]): F[ServiceErrorOr[CopyRequest]]
 
   /** Invoked by a registered user to cancel one of their CopyRequests */
-  def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[Statuses]]]
+  def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]]
 
   /** Invoked by the Copy owner to accept a CopyRequest */
-  def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
+  def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]]
 
   /** Invoked by the Copy owner to reject CopyRequest */
-  def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
+  def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]]
 
   /** Invoked by the Copy owner to mark a CopyRequest as fulfilled */
-  def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]]
+  def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]]
 
 }
 
@@ -59,13 +59,13 @@ object CopyRequestService {
     implicit zoneId: ZoneId // TODO Include in config object
   ): CopyRequestService[F] = {
     new CopyRequestService[F] {
-      override def get(id: Id[CopyRequest]): F[TransactionErrorOr[CopyRequest]] =
+      override def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]] =
         copyRequestRepository
           .get(id)
-          .map(_.toRight[TransactionError](ResourceNotFound("CopyRequest", id)))
+          .map(_.toRight[ServiceError](ResourceNotFound("CopyRequest", id)))
           .transact(transactor)
 
-      override def create(copyId: Id[Copy])(userId: Id[User]): F[TransactionErrorOr[CopyRequest]] = {
+      override def create(copyId: Id[Copy])(userId: Id[User]): F[ServiceErrorOr[CopyRequest]] = {
         val copyRequest = CopyRequest(
           id = Id.generate[CopyRequest],
           copyId,
@@ -77,25 +77,25 @@ object CopyRequestService {
         copyRequestRepository
           .create(copyRequest)
           .transact(transactor)
-          .map(_ => copyRequest.asRight[TransactionError])
+          .map(_ => copyRequest.asRight[ServiceError])
       }
 
-      override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[TransactionErrorOr[Statuses]]] =
+      override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]] =
         requestIssuerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleCancelCommand)
         }
 
-      override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
+      override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleAcceptCommand)
         }
 
-      override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
+      override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleRejectCommand)
         }
 
-      override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[Statuses]]] =
+      override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
         copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleMarkAsFulfilledCommand)
         }
@@ -104,27 +104,27 @@ object CopyRequestService {
         requestId: Id[CopyRequest]
       )(
         handler: InitialState => Either[InvalidState, StateUpdate]
-      ): F[TransactionErrorOr[Statuses]] =
+      ): F[ServiceErrorOr[Statuses]] =
         (
           for {
             (copyRequest, copy, maybeNextCopyRequest) <- (
               for {
                 copyRequest <- copyRequestRepository
                   .get(requestId)
-                  .asEitherT[TransactionError](ResourceNotFound("CopyRequest", requestId))
+                  .asEitherT[ServiceError](ResourceNotFound("CopyRequest", requestId))
                 copy <- copyRepository
                   .get(copyRequest.copyId)
-                  .asEitherT[TransactionError](ResourceNotFound("Copy", copyRequest.copyId))
+                  .asEitherT[ServiceError](ResourceNotFound("Copy", copyRequest.copyId))
                 maybeNextCopyRequest <- copyRequestRepository
                   .findFirstOnWaitingList(copy.id)
-                  .liftToEitherT[TransactionError]
+                  .liftToEitherT[ServiceError]
               } yield (copyRequest, copy, maybeNextCopyRequest)
             ).mapK[F](transactor)
             initialState = InitialState(copyRequest.status, maybeNextCopyRequest.map(r =>(r.id, r.status)), copy.status)
             statuses <- handler(initialState)
               .pure[F]
               .asEitherT
-              .leftMap[TransactionError](_ => TransactionError.InvalidState(s"Invalid state: $initialState"))
+              .leftMap[ServiceError](_ => ServiceError.InvalidState(s"Invalid state: $initialState"))
               .semiflatMap(performStateUpdate(copyRequest.id, copy.id, initialState))
           } yield statuses
         ).value

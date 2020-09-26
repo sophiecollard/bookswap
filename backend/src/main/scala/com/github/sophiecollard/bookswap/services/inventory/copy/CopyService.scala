@@ -8,8 +8,8 @@ import com.github.sophiecollard.bookswap.domain.inventory.CopyStatus.{Available,
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.TransactionError.ResourceNotFound
-import com.github.sophiecollard.bookswap.error.Error.{TransactionError, TransactionErrorOr}
+import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization.AuthorizationService
@@ -23,13 +23,13 @@ import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 trait CopyService[F[_]] {
 
   /** Fetches a Copy */
-  def get(id: Id[Copy]): F[TransactionErrorOr[Copy]]
+  def get(id: Id[Copy]): F[ServiceErrorOr[Copy]]
 
   /** Invoked by a registered user to create a new Copy */
-  def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[TransactionErrorOr[Copy]]
+  def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[ServiceErrorOr[Copy]]
 
   /** Invoked by the Copy owner to withdraw that Copy */
-  def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[CopyStatus]]]
+  def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]]
 
 }
 
@@ -43,13 +43,13 @@ object CopyService {
   )(
     implicit zoneId: ZoneId
   ): CopyService[F] = new CopyService[F] {
-    override def get(id: Id[Copy]): F[TransactionErrorOr[Copy]] =
+    override def get(id: Id[Copy]): F[ServiceErrorOr[Copy]] =
       copyRepository
         .get(id)
-        .map(_.toRight[TransactionError](ResourceNotFound("Copy", id)))
+        .map(_.toRight[ServiceError](ResourceNotFound("Copy", id)))
         .transact(transactor)
 
-    override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[TransactionErrorOr[Copy]] = {
+    override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[ServiceErrorOr[Copy]] = {
       val copy = Copy(
         id = Id.generate[Copy],
         edition,
@@ -61,15 +61,15 @@ object CopyService {
 
       copyRepository.create(copy)
         .transact(transactor)
-        .map(_ => copy.asRight[TransactionError])
+        .map(_ => copy.asRight[ServiceError])
     }
 
-    override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[TransactionErrorOr[CopyStatus]]] =
+    override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]] =
       copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, id)) {
         copyRepository
           .get(id)
           .transact(transactor)
-          .asEitherT[TransactionError](ResourceNotFound("Copy", id))
+          .asEitherT[ServiceError](ResourceNotFound("Copy", id))
           .semiflatMap { copy =>
             val initialState = InitialState(copy.status)
             val stateUpdate = StateMachine.handleWithdrawCommand(initialState)

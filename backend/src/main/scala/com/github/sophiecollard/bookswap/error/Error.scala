@@ -39,22 +39,22 @@ object Error {
 
   }
 
-  sealed abstract class TransactionError(override val message: String) extends Error
+  sealed abstract class ServiceError(override val message: String) extends Error
 
-  type TransactionErrorOr[A] = Either[TransactionError, A]
+  type ServiceErrorOr[A] = Either[ServiceError, A]
 
-  object TransactionError {
+  object ServiceError {
 
     final case class InvalidState(override val message: String)
-      extends TransactionError(message)
+      extends ServiceError(message)
 
     final case class ResourceNotFound[A](resourceName: String, id: Id[A])
-      extends TransactionError(
+      extends ServiceError(
         message = s"$resourceName [${id.value}] was not found."
       )
 
     final case class EditionNotFound(isbn: ISBN)
-      extends TransactionError(
+      extends ServiceError(
         message = s"Edition [${isbn.value}] was not found."
       )
 

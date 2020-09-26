@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheRequestIssuer, NotTheRequestedCopyOwner}
-import com.github.sophiecollard.bookswap.error.Error.TransactionError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
