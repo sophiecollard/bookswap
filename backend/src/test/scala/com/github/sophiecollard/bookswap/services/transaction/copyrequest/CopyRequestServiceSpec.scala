@@ -11,6 +11,7 @@ import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheR
 import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
+import com.github.sophiecollard.bookswap.services.testsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -57,52 +58,42 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'cancel' method" should {
     "deny any request from a user other than the request issuer" in new WithRequestPending {
-      val authorizationResult = copyRequestService.cancel(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheRequestIssuer(copyOwnerId, requestId)
+      withFailedAuthorization(copyRequestService.cancel(requestId)(copyOwnerId)) { error =>
+        error shouldBe NotTheRequestIssuer(copyOwnerId, requestId)
+      }
     }
 
     "cancel a pending request" in new WithRequestPending {
-      val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isCancelled)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isCancelled)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsCancelled(requestId))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "cancel a request on the waiting list" in new WithRequestOnWaitingList {
-      val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isCancelled)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isCancelled)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsCancelled(requestId))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "cancel a rejected request" in new WithRequestRejected {
-      val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isCancelled)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isCancelled)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsCancelled(requestId))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
@@ -110,15 +101,12 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "cancel an accepted request and accept the next request on the waiting list" in
       new WithNextRequestOnWaitingList {
-        val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-        assert(authorizationResult.isSuccess)
-        assert(authorizationResult.unsafeResult.isRight)
-
-        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-        assert(returnedRequestStatus.isCancelled)
-        assert(returnedCopyStatus == initialCopyStatus)
+        withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+            assert(returnedRequestStatus.isCancelled)
+            assert(returnedCopyStatus == initialCopyStatus)
+          }
+        }
 
         assert(requestIsCancelled(requestId))
         assert(requestIsAccepted(nextRequestId))
@@ -127,45 +115,36 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "cancel an accepted request and update the copy status back to 'Available' if there is no waiting list" in
       new WithRequestAccepted {
-        val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-        assert(authorizationResult.isSuccess)
-        assert(authorizationResult.unsafeResult.isRight)
-
-        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-        assert(returnedRequestStatus.isCancelled)
-        assert(returnedCopyStatus == CopyStatus.Available)
+        withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+            assert(returnedRequestStatus.isCancelled)
+            assert(returnedCopyStatus == CopyStatus.Available)
+          }
+        }
 
         assert(requestIsCancelled(requestId))
         assert(copyIsAvailable(copyId))
       }
 
     "not update a cancelled request" in new WithRequestCancelled {
-      val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
-      val authorizationResult = copyRequestService.cancel(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
@@ -174,112 +153,90 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'accept' method" should {
     "deny any request from a user other than the copy owner" in new WithRequestPending {
-      val authorizationResult = copyRequestService.accept(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
+      withFailedAuthorization(copyRequestService.accept(requestId)(requestIssuerId)) { error =>
+        error shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
+      }
     }
 
     "accept a pending request" in new WithRequestPending {
-      val authorizationResult = copyRequestService.accept(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isAccepted)
-      assert(returnedCopyStatus == CopyStatus.Reserved)
+      withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isAccepted)
+          assert(returnedCopyStatus == CopyStatus.Reserved)
+        }
+      }
 
       assert(requestIsAccepted(requestId))
       assert(copyIsReserved(copyId))
     }
 
     "accept a pending request on the waiting list if the copy is already reserved" in new WithRequestAccepted {
-      val authorizationResult = copyRequestService.accept(nextRequestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isOnWaitingList)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.accept(nextRequestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isOnWaitingList)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsOnWaitingList(nextRequestId))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "accept a rejected request" in new WithRequestRejected {
-      val authorizationResult = copyRequestService.accept(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isAccepted)
-      assert(returnedCopyStatus == CopyStatus.Reserved)
+      withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isAccepted)
+          assert(returnedCopyStatus == CopyStatus.Reserved)
+        }
+      }
 
       assert(requestIsAccepted(requestId))
       assert(copyIsReserved(copyId))
     }
 
     "not update an accepted request" in new WithRequestAccepted {
-      val authorizationResult = copyRequestService.accept(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a request on the waiting list" in new WithRequestOnWaitingList {
-      val authorizationResult = copyRequestService.accept(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a cancelled request" in new WithRequestCancelled {
-      val authorizationResult = copyRequestService.accept(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
-      val authorizationResult = copyRequestService.accept(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
@@ -288,52 +245,42 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'reject' method" should {
     "deny any request from a user other than the copy owner" in new WithRequestPending {
-      val authorizationResult = copyRequestService.reject(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
+      withFailedAuthorization(copyRequestService.reject(requestId)(requestIssuerId)) { error =>
+        error shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
+      }
     }
 
     "reject a pending request" in new WithRequestPending {
-      val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isRejected)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isRejected)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsRejected(requestId))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "reject a request on the waiting list" in new WithRequestOnWaitingList {
-      val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isRejected)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isRejected)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsRejected(requestId))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "reject an accepted request and accept the next request on the waiting list" in new WithNextRequestOnWaitingList {
-      val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus.isRejected)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus.isRejected)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsRejected(requestId))
       assert(requestIsAccepted(nextRequestId))
@@ -342,60 +289,48 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "reject an accepted request and update the copy status back to 'Available' if there is no waiting list" in
       new WithRequestAccepted {
-        val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-        assert(authorizationResult.isSuccess)
-        assert(authorizationResult.unsafeResult.isRight)
-
-        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-        assert(returnedRequestStatus.isRejected)
-        assert(returnedCopyStatus == CopyStatus.Available)
+        withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+            assert(returnedRequestStatus.isRejected)
+            assert(returnedCopyStatus == CopyStatus.Available)
+          }
+        }
 
         assert(requestIsRejected(requestId))
         assert(copyIsAvailable(copyId))
       }
 
     "not update a rejected request" in new WithRequestRejected {
-      val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a cancelled request" in new WithRequestCancelled {
-      val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
-      val authorizationResult = copyRequestService.reject(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
@@ -404,23 +339,19 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'markAsFulfilled' method" should {
     "deny any request from a user other than the copy owner" in new WithRequestAccepted {
-      val authorizationResult = copyRequestService.markAsFulfilled(requestId)(requestIssuerId)
-
-      assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
+      withFailedAuthorization(copyRequestService.markAsFulfilled(requestId)(requestIssuerId)) { error =>
+        error shouldBe NotTheRequestedCopyOwner(requestIssuerId, requestId)
+      }
     }
 
     "mark an accepted request as fulfilled and reject all requests still pending or on the waiting list" in
       new WithRequestAccepted {
-        val authorizationResult = copyRequestService.markAsFulfilled(requestId)(copyOwnerId)
-
-        assert(authorizationResult.isSuccess)
-        assert(authorizationResult.unsafeResult.isRight)
-
-        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-        assert(returnedRequestStatus.isFulfilled)
-        assert(returnedCopyStatus == CopyStatus.Swapped)
+        withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
+          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+            assert(returnedRequestStatus.isFulfilled)
+            assert(returnedCopyStatus == CopyStatus.Swapped)
+          }
+        }
 
         assert(requestIsFulfilled(requestId))
         assert(requestIsRejected(nextRequestId))
@@ -428,75 +359,60 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       }
 
     "not update a pending request" in new WithRequestPending {
-      val authorizationResult = copyRequestService.markAsFulfilled(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a request on the waiting list" in new WithRequestOnWaitingList {
-      val authorizationResult = copyRequestService.markAsFulfilled(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a rejected request" in new WithRequestRejected {
-      val authorizationResult = copyRequestService.markAsFulfilled(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a cancelled request" in new WithRequestCancelled {
-      val authorizationResult = copyRequestService.markAsFulfilled(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
-      val authorizationResult = copyRequestService.markAsFulfilled(requestId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedRequestStatus == initialRequestStatus)
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
+        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
+          assert(returnedRequestStatus == initialRequestStatus)
+          assert(returnedCopyStatus == initialCopyStatus)
+        }
+      }
 
       assert(requestIsNotUpdated(requestId, initialRequestStatus))
       assert(copyIsNotUpdated(copyId, initialCopyStatus))
