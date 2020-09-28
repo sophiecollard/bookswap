@@ -28,6 +28,9 @@ trait CopyService[F[_]] {
   /** Invoked by a registered user to create a new Copy */
   def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[ServiceErrorOr[Copy]]
 
+  /** Invoked by the Copy owner to update its condition */
+  def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[Condition]]
+
   /** Invoked by the Copy owner to withdraw that Copy */
   def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]]
 
@@ -60,9 +63,17 @@ object CopyService {
       )
 
       copyRepository.create(copy)
-        .transact(transactor)
         .map(_ => copy.asRight[ServiceError])
+        .transact(transactor)
     }
+
+    override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[Condition]] =
+      copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, id)) {
+        copyRepository
+          .updateCondition(id, condition)
+          .map(_ => condition)
+          .transact(transactor)
+      }
 
     override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]] =
       copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, id)) {

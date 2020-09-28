@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.repositories.inventory
 
 import doobie.implicits._
 import doobie.implicits.javatime._
-import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import doobie.{ConnectionIO, Query0, Update0}
 
@@ -10,7 +10,9 @@ trait CopyRepository[F[_]] {
 
   def create(copy: Copy): F[Unit]
 
-  def updateStatus(id: Id[Copy], newStatus: CopyStatus): F[Unit]
+  def updateCondition(id: Id[Copy], condition: Condition): F[Unit]
+
+  def updateStatus(id: Id[Copy], status: CopyStatus): F[Unit]
 
   def get(id: Id[Copy]): F[Option[Copy]]
 
@@ -24,8 +26,13 @@ object CopyRepository {
         .run
         .map(_ => ())
 
-    override def updateStatus(id: Id[Copy], newStatus: CopyStatus): ConnectionIO[Unit] =
-      updateStatusUpdate(id, newStatus)
+    override def updateCondition(id: Id[Copy], condition: Condition): ConnectionIO[Unit] =
+      updateConditionUpdate(id, condition)
+        .run
+        .map(_ => ())
+
+    override def updateStatus(id: Id[Copy], status: CopyStatus): ConnectionIO[Unit] =
+      updateStatusUpdate(id, status)
         .run
         .map(_ => ())
 
@@ -41,10 +48,17 @@ object CopyRepository {
          |ON CONFLICT id DO NOTHING
        """.stripMargin.update
 
-  def updateStatusUpdate(id: Id[Copy], newStatus: CopyStatus): Update0 =
+  def updateConditionUpdate(id: Id[Copy], condition: Condition): Update0 =
     sql"""
          |UPDATE copies
-         |SET status = $newStatus
+         |SET condition = $condition
+         |WHERE id = $id
+       """.stripMargin.update
+
+  def updateStatusUpdate(id: Id[Copy], status: CopyStatus): Update0 =
+    sql"""
+         |UPDATE copies
+         |SET status = $status
          |WHERE id = $id
        """.stripMargin.update
 

@@ -46,6 +46,27 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     }
   }
 
+  "The 'updateCondition' method" should {
+    "deny any request from a user other than the copy owner" in new WithCopyAvailable {
+      val authorizationResult = copyService.updateCondition(copyId, Condition.SomeSignsOfUse)(requestIssuerId)
+
+      assert(authorizationResult.isFailure)
+      authorizationResult.unsafeError shouldBe NotTheCopyOwner(requestIssuerId, copyId)
+    }
+
+    "update the condition of a copy" in new WithCopyAvailable {
+      val condition = Condition.SomeSignsOfUse
+      val authorizationResult = copyService.updateCondition(copyId, condition)(copyOwnerId)
+
+      assert(authorizationResult.isSuccess)
+      assert(authorizationResult.unsafeResult == condition)
+
+      val maybeCopy = copyRepository.get(copyId)
+      assert(maybeCopy.isDefined)
+      assert(maybeCopy.get.condition == condition)
+    }
+  }
+
   "The 'withdraw' method" should {
     "deny any request from a user other than the copy owner" in new WithCopyAvailable {
       val authorizationResult = copyService.withdraw(copyId)(requestIssuerId)
