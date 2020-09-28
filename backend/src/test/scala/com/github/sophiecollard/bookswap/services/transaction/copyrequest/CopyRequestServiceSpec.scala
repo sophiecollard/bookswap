@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheR
 import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
-import com.github.sophiecollard.bookswap.services.testsyntax._
+import com.github.sophiecollard.bookswap.services.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -20,39 +20,33 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'get' method" should {
     "return a request if found" in new WithRequestPending {
-      val result = copyRequestService.get(requestId)
-
-      assert(result.isRight)
-      assert(result.toOption.get == copyRequest)
+      withRight(copyRequestService.get(requestId)) {
+        _ shouldBe copyRequest
+      }
     }
 
     "return an error if not found" in new WithRequestPending {
       val otherRequestId = Id.generate[CopyRequest]
-      val result = copyRequestService.get(otherRequestId)
 
-      assert(result.isLeft)
-      assert(result.swap.toOption.get == ResourceNotFound("CopyRequest", otherRequestId))
+      withLeft(copyRequestService.get(otherRequestId)) {
+        _ shouldBe ResourceNotFound("CopyRequest", otherRequestId)
+      }
     }
   }
 
   "The 'create' method" should {
     "create a new copy request" in new WithBasicSetup {
-      val result = copyRequestService.create(copyId)(requestIssuerId)
+      withRight(copyRequestService.create(copyId)(requestIssuerId)) { returnedRequest =>
+        assert(returnedRequest.copyId == copyId)
+        assert(returnedRequest.requestedBy == requestIssuerId)
+        assert(returnedRequest.status == initialRequestStatus)
 
-      assert(result.isRight)
-
-      val returnedRequest = result.toOption.get
-
-      assert(returnedRequest.copyId == copyId)
-      assert(returnedRequest.requestedBy == requestIssuerId)
-      assert(returnedRequest.status == initialRequestStatus)
-
-      val maybeCreatedRequest = copyRequestRepository.get(returnedRequest.id)
-
-      assert(maybeCreatedRequest.isDefined)
-      assert(maybeCreatedRequest.get.copyId == copyId)
-      assert(maybeCreatedRequest.get.requestedBy == requestIssuerId)
-      assert(maybeCreatedRequest.get.status == initialRequestStatus)
+        withSome(copyRequestRepository.get(returnedRequest.id)) { createdRequest =>
+          assert(createdRequest.copyId == copyId)
+          assert(createdRequest.requestedBy == requestIssuerId)
+          assert(createdRequest.status == initialRequestStatus)
+        }
+      }
     }
   }
 

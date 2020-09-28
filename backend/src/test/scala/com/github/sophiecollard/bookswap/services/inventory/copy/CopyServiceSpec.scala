@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.NotTheCo
 import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
-import com.github.sophiecollard.bookswap.services.testsyntax._
+import com.github.sophiecollard.bookswap.services.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -20,41 +20,35 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'get' method" should {
     "return a request if found" in new WithCopyAvailable {
-      val result = copyService.get(copyId)
-
-      assert(result.isRight)
-      assert(result.toOption.get == copy)
+      withRight(copyService.get(copyId)) {
+        _ shouldBe copy
+      }
     }
 
     "return an error if not found" in new WithCopyAvailable {
       val otherCopyId = Id.generate[Copy]
-      val result = copyService.get(otherCopyId)
 
-      assert(result.isLeft)
-      assert(result.swap.toOption.get == ResourceNotFound("Copy", otherCopyId))
+      withLeft(copyService.get(otherCopyId)) {
+        _ shouldBe ResourceNotFound("Copy", otherCopyId)
+      }
     }
   }
 
   "The 'create' method" should {
     "create a new copy request" in new WithBasicSetup {
-      val result = copyService.create(copy.isbn, copy.condition)(copyOwnerId)
+      withRight(copyService.create(copy.isbn, copy.condition)(copyOwnerId)) { returnedCopy =>
+        assert(returnedCopy.isbn == copy.isbn)
+        assert(returnedCopy.offeredBy == copyOwnerId)
+        assert(returnedCopy.condition == copy.condition)
+        assert(returnedCopy.status == initialCopyStatus)
 
-      assert(result.isRight)
-
-      val returnedCopy = result.toOption.get
-
-      assert(returnedCopy.isbn == copy.isbn)
-      assert(returnedCopy.offeredBy == copyOwnerId)
-      assert(returnedCopy.condition == copy.condition)
-      assert(returnedCopy.status == initialCopyStatus)
-
-      val maybeCreatedCopy = copyRepository.get(returnedCopy.id)
-
-      assert(maybeCreatedCopy.isDefined)
-      assert(maybeCreatedCopy.get.isbn == copy.isbn)
-      assert(maybeCreatedCopy.get.offeredBy == copyOwnerId)
-      assert(maybeCreatedCopy.get.condition == copy.condition)
-      assert(maybeCreatedCopy.get.status == initialCopyStatus)
+        withSome(copyRepository.get(returnedCopy.id)) { createdCopy =>
+          assert(createdCopy.isbn == copy.isbn)
+          assert(createdCopy.offeredBy == copyOwnerId)
+          assert(createdCopy.condition == copy.condition)
+          assert(createdCopy.status == initialCopyStatus)
+        }
+      }
     }
   }
 

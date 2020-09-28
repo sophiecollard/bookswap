@@ -4,7 +4,7 @@ import com.github.sophiecollard.bookswap.error.Error.{AuthorizationError, Servic
 import com.github.sophiecollard.bookswap.services.authorization.WithAuthorization
 import org.scalatest.Assertion
 
-package object testsyntax {
+package object specsyntax {
 
   def withFailedAuthorization[R, Tag](
     authorizationResult: WithAuthorization[R, Tag]
@@ -31,6 +31,33 @@ package object testsyntax {
   ): Assertion = {
     assert(serviceErrorOr.isRight)
     ifNoError(serviceErrorOr.toOption.get)
+  }
+
+  def withSome[A](
+    maybeA: Option[A]
+  )(
+    ifSome: A => Assertion
+  ): Assertion = {
+    assert(maybeA.isDefined)
+    ifSome(maybeA.get)
+  }
+
+  def withLeft[E, A](
+    maybeE: Either[E, A]
+  )(
+    ifLeft: E => Assertion
+  ): Assertion = {
+    assert(maybeE.isLeft)
+    ifLeft(maybeE.swap.toOption.get)
+  }
+
+  def withRight[E, A](
+    maybeA: Either[E, A]
+  )(
+    ifRight: A => Assertion
+  ): Assertion = {
+    assert(maybeA.isRight)
+    ifRight(maybeA.toOption.get)
   }
 
 }
