@@ -72,10 +72,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult == condition)
 
-      val maybeUpdatedCopy = copyRepository.get(copyId)
-
-      assert(maybeUpdatedCopy.isDefined)
-      assert(maybeUpdatedCopy.get.condition == condition)
+      assert(copyConditionIs(copyId, condition))
     }
   }
 
@@ -97,14 +94,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
       assert(returnedCopyStatus == CopyStatus.withdrawn)
 
-      val maybeUpdatedCopy = copyRepository.get(copyId)
-
-      assert(maybeUpdatedCopy.isDefined)
-      assert(maybeUpdatedCopy.get.status == CopyStatus.withdrawn)
-
-      val maybeUpdatedRequest = copyRequestRepository.get(requestId)
-      assert(maybeUpdatedRequest.isDefined)
-      assert(maybeUpdatedRequest.get.status.isRejected)
+      assert(copyIsWithdrawn(copyId))
+      assert(requestIsRejected(requestId))
     }
 
     "withdraw a reserved copy and reject all open requests" in new WithCopyReserved {
@@ -117,15 +108,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
       assert(returnedCopyStatus == CopyStatus.withdrawn)
 
-      val maybeUpdatedCopy = copyRepository.get(copyId)
-
-      assert(maybeUpdatedCopy.isDefined)
-      assert(maybeUpdatedCopy.get.status == CopyStatus.withdrawn)
-
-      val maybeUpdatedRequest = copyRequestRepository.get(requestId)
-
-      assert(maybeUpdatedRequest.isDefined)
-      assert(maybeUpdatedRequest.get.status.isRejected)
+      assert(copyIsWithdrawn(copyId))
+      assert(requestIsRejected(requestId))
     }
 
     "not update a swapped copy" in new WithCopySwapped {
@@ -138,10 +122,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
       assert(returnedCopyStatus == initialCopyStatus)
 
-      val maybeNotUpdatedCopy = copyRepository.get(copyId)
-
-      assert(maybeNotUpdatedCopy.isDefined)
-      assert(maybeNotUpdatedCopy.get.status == initialCopyStatus)
+      assert(copyStatusIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a withdrawn copy" in new WithCopyWithdrawn {
@@ -154,10 +135,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
       assert(returnedCopyStatus == initialCopyStatus)
 
-      val maybeNotUpdatedCopy = copyRepository.get(copyId)
-
-      assert(maybeNotUpdatedCopy.isDefined)
-      assert(maybeNotUpdatedCopy.get.status == initialCopyStatus)
+      assert(copyStatusIsNotUpdated(copyId, initialCopyStatus))
     }
   }
 
@@ -200,6 +178,18 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
       requestedOn = LocalDateTime.of(2019, 9, 26, 17, 0, 0),
       status = initialRequestStatus
     )
+
+    def copyConditionIs(id: Id[Copy], condition: Condition): Boolean =
+      copyRepository.get(id).exists(_.condition == condition)
+
+    def copyIsWithdrawn(id: Id[Copy]): Boolean =
+      copyRepository.get(id).exists(_.status == CopyStatus.Withdrawn)
+
+    def copyStatusIsNotUpdated(id: Id[Copy], initialCopyStatus: CopyStatus): Boolean =
+      copyRepository.get(id).exists(_.status == initialCopyStatus)
+
+    def requestIsRejected(id: Id[CopyRequest]): Boolean =
+      copyRequestRepository.get(id).exists(_.status.isRejected)
   }
 
   trait WithCopyAvailable extends WithBasicSetup {
