@@ -11,6 +11,7 @@ import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.NotTheCo
 import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
+import com.github.sophiecollard.bookswap.services.testsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -59,18 +60,17 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'updateCondition' method" should {
     "deny any request from a user other than the copy owner" in new WithCopyAvailable {
-      val authorizationResult = copyService.updateCondition(copyId, Condition.SomeSignsOfUse)(requestIssuerId)
-
-      assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheCopyOwner(requestIssuerId, copyId)
+      withFailedAuthorization(copyService.updateCondition(copyId, Condition.SomeSignsOfUse)(requestIssuerId)) { error =>
+        error shouldBe NotTheCopyOwner(requestIssuerId, copyId)
+      }
     }
 
     "update the condition of a copy" in new WithCopyAvailable {
       val condition = Condition.SomeSignsOfUse
-      val authorizationResult = copyService.updateCondition(copyId, condition)(copyOwnerId)
 
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult == condition)
+      withSuccessfulAuthorization(copyService.updateCondition(copyId, condition)(copyOwnerId)) {
+        _ shouldBe condition
+      }
 
       assert(copyConditionIs(copyId, condition))
     }
@@ -78,62 +78,49 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'withdraw' method" should {
     "deny any request from a user other than the copy owner" in new WithCopyAvailable {
-      val authorizationResult = copyService.withdraw(copyId)(requestIssuerId)
-
-      assert(authorizationResult.isFailure)
-      authorizationResult.unsafeError shouldBe NotTheCopyOwner(requestIssuerId, copyId)
+      withFailedAuthorization(copyService.withdraw(copyId)(requestIssuerId)) { error =>
+        error shouldBe NotTheCopyOwner(requestIssuerId, copyId)
+      }
     }
 
     "withdraw an available copy and reject all pending requests" in new WithCopyAvailable {
-      val authorizationResult = copyService.withdraw(copyId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val returnedCopyStatus = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedCopyStatus == CopyStatus.withdrawn)
+      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+        withNoServiceError {
+          _ shouldBe CopyStatus.withdrawn
+        }
+      }
 
       assert(copyIsWithdrawn(copyId))
       assert(requestIsRejected(requestId))
     }
 
     "withdraw a reserved copy and reject all open requests" in new WithCopyReserved {
-      val authorizationResult = copyService.withdraw(copyId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val returnedCopyStatus = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedCopyStatus == CopyStatus.withdrawn)
+      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+        withNoServiceError {
+          _ shouldBe CopyStatus.withdrawn
+        }
+      }
 
       assert(copyIsWithdrawn(copyId))
       assert(requestIsRejected(requestId))
     }
 
     "not update a swapped copy" in new WithCopySwapped {
-      val authorizationResult = copyService.withdraw(copyId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val returnedCopyStatus = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+        withNoServiceError {
+          _ shouldBe initialCopyStatus
+        }
+      }
 
       assert(copyStatusIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a withdrawn copy" in new WithCopyWithdrawn {
-      val authorizationResult = copyService.withdraw(copyId)(copyOwnerId)
-
-      assert(authorizationResult.isSuccess)
-      assert(authorizationResult.unsafeResult.isRight)
-
-      val returnedCopyStatus = authorizationResult.unsafeResult.toOption.get
-
-      assert(returnedCopyStatus == initialCopyStatus)
+      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+        withNoServiceError {
+          _ shouldBe initialCopyStatus
+        }
+      }
 
       assert(copyStatusIsNotUpdated(copyId, initialCopyStatus))
     }
