@@ -39,9 +39,19 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       val result = copyRequestService.create(copyId)(requestIssuerId)
 
       assert(result.isRight)
-      assert(result.toOption.get.copyId == copyId)
-      assert(result.toOption.get.requestedBy == requestIssuerId)
-      assert(result.toOption.get.status == initialRequestStatus)
+
+      val returnedRequest = result.toOption.get
+
+      assert(returnedRequest.copyId == copyId)
+      assert(returnedRequest.requestedBy == requestIssuerId)
+      assert(returnedRequest.status == initialRequestStatus)
+
+      val maybeCreatedRequest = copyRequestRepository.get(returnedRequest.id)
+
+      assert(maybeCreatedRequest.isDefined)
+      assert(maybeCreatedRequest.get.copyId == copyId)
+      assert(maybeCreatedRequest.get.requestedBy == requestIssuerId)
+      assert(maybeCreatedRequest.get.status == initialRequestStatus)
     }
   }
 
@@ -59,10 +69,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isCancelled)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isCancelled)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsCancelled(requestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "cancel a request on the waiting list" in new WithRequestOnWaitingList {
@@ -71,10 +84,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isCancelled)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isCancelled)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsCancelled(requestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "cancel a rejected request" in new WithRequestRejected {
@@ -83,10 +99,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isCancelled)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isCancelled)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsCancelled(requestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "cancel an accepted request and accept the next request on the waiting list" in
@@ -96,14 +115,14 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
         assert(authorizationResult.isSuccess)
         assert(authorizationResult.unsafeResult.isRight)
 
-        val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-        assert(requestStatus.isCancelled)
-        assert(copyStatus == initialCopyStatus)
+        assert(returnedRequestStatus.isCancelled)
+        assert(returnedCopyStatus == initialCopyStatus)
 
-        val maybeNextCopyRequest = copyRequestRepository.get(nextRequestId)
-        assert(maybeNextCopyRequest.isDefined)
-        assert(maybeNextCopyRequest.get.status.isAccepted)
+        assert(requestIsCancelled(requestId))
+        assert(requestIsAccepted(nextRequestId))
+        assert(copyIsNotUpdated(copyId, initialCopyStatus))
       }
 
     "cancel an accepted request and update the copy status back to 'Available' if there is no waiting list" in
@@ -113,10 +132,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
         assert(authorizationResult.isSuccess)
         assert(authorizationResult.unsafeResult.isRight)
 
-        val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-        assert(requestStatus.isCancelled)
-        assert(copyStatus == CopyStatus.Available)
+        assert(returnedRequestStatus.isCancelled)
+        assert(returnedCopyStatus == CopyStatus.Available)
+
+        assert(requestIsCancelled(requestId))
+        assert(copyIsAvailable(copyId))
       }
 
     "not update a cancelled request" in new WithRequestCancelled {
@@ -125,10 +147,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
@@ -137,10 +162,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
   }
 
@@ -158,10 +186,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isAccepted)
-      assert(copyStatus == CopyStatus.Reserved)
+      assert(returnedRequestStatus.isAccepted)
+      assert(returnedCopyStatus == CopyStatus.Reserved)
+
+      assert(requestIsAccepted(requestId))
+      assert(copyIsReserved(copyId))
     }
 
     "accept a pending request on the waiting list if the copy is already reserved" in new WithRequestAccepted {
@@ -170,10 +201,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isOnWaitingList)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isOnWaitingList)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsOnWaitingList(nextRequestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "accept a rejected request" in new WithRequestRejected {
@@ -182,10 +216,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isAccepted)
-      assert(copyStatus == CopyStatus.Reserved)
+      assert(returnedRequestStatus.isAccepted)
+      assert(returnedCopyStatus == CopyStatus.Reserved)
+
+      assert(requestIsAccepted(requestId))
+      assert(copyIsReserved(copyId))
     }
 
     "not update an accepted request" in new WithRequestAccepted {
@@ -194,10 +231,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a request on the waiting list" in new WithRequestOnWaitingList {
@@ -206,10 +246,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a cancelled request" in new WithRequestCancelled {
@@ -218,10 +261,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
@@ -230,10 +276,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
   }
 
@@ -251,10 +300,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isRejected)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isRejected)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsRejected(requestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "reject a request on the waiting list" in new WithRequestOnWaitingList {
@@ -263,10 +315,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isRejected)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isRejected)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsRejected(requestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "reject an accepted request and accept the next request on the waiting list" in new WithNextRequestOnWaitingList {
@@ -275,14 +330,14 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus.isRejected)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus.isRejected)
+      assert(returnedCopyStatus == initialCopyStatus)
 
-      val maybeNextCopyRequest = copyRequestRepository.get(nextRequestId)
-      assert(maybeNextCopyRequest.isDefined)
-      assert(maybeNextCopyRequest.get.status.isAccepted)
+      assert(requestIsRejected(requestId))
+      assert(requestIsAccepted(nextRequestId))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "reject an accepted request and update the copy status back to 'Available' if there is no waiting list" in
@@ -292,10 +347,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
         assert(authorizationResult.isSuccess)
         assert(authorizationResult.unsafeResult.isRight)
 
-        val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-        assert(requestStatus.isRejected)
-        assert(copyStatus == CopyStatus.Available)
+        assert(returnedRequestStatus.isRejected)
+        assert(returnedCopyStatus == CopyStatus.Available)
+
+        assert(requestIsRejected(requestId))
+        assert(copyIsAvailable(copyId))
       }
 
     "not update a rejected request" in new WithRequestRejected {
@@ -304,10 +362,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a cancelled request" in new WithRequestCancelled {
@@ -316,10 +377,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
@@ -328,10 +392,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
   }
 
@@ -350,14 +417,14 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
         assert(authorizationResult.isSuccess)
         assert(authorizationResult.unsafeResult.isRight)
 
-        val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+        val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-        assert(requestStatus.isFulfilled)
-        assert(copyStatus == CopyStatus.Swapped)
+        assert(returnedRequestStatus.isFulfilled)
+        assert(returnedCopyStatus == CopyStatus.Swapped)
 
-        val maybeNextCopyRequest = copyRequestRepository.get(nextRequestId)
-        assert(maybeNextCopyRequest.isDefined)
-        assert(maybeNextCopyRequest.get.status.isRejected)
+        assert(requestIsFulfilled(requestId))
+        assert(requestIsRejected(nextRequestId))
+        assert(copyIsSwapped(copyId))
       }
 
     "not update a pending request" in new WithRequestPending {
@@ -366,10 +433,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a request on the waiting list" in new WithRequestOnWaitingList {
@@ -378,10 +448,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a rejected request" in new WithRequestRejected {
@@ -390,10 +463,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a cancelled request" in new WithRequestCancelled {
@@ -402,10 +478,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
 
     "not update a fulfilled request" in new WithRequestFulfilled {
@@ -414,10 +493,13 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       assert(authorizationResult.isSuccess)
       assert(authorizationResult.unsafeResult.isRight)
 
-      val (requestStatus, copyStatus) = authorizationResult.unsafeResult.toOption.get
+      val (returnedRequestStatus, returnedCopyStatus) = authorizationResult.unsafeResult.toOption.get
 
-      assert(requestStatus == initialRequestStatus)
-      assert(copyStatus == initialCopyStatus)
+      assert(returnedRequestStatus == initialRequestStatus)
+      assert(returnedCopyStatus == initialCopyStatus)
+
+      assert(requestIsNotUpdated(requestId, initialRequestStatus))
+      assert(copyIsNotUpdated(copyId, initialCopyStatus))
     }
   }
 
@@ -472,6 +554,36 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     )
 
     copyRepository.create(copy)
+
+    def copyIsAvailable(id: Id[Copy]): Boolean =
+      copyRepository.get(id).exists(_.status == CopyStatus.Available)
+
+    def copyIsReserved(id: Id[Copy]): Boolean =
+      copyRepository.get(id).exists(_.status == CopyStatus.Reserved)
+
+    def copyIsSwapped(id: Id[Copy]): Boolean =
+      copyRepository.get(id).exists(_.status == CopyStatus.Swapped)
+
+    def copyIsNotUpdated(id: Id[Copy], initialCopyStatus: CopyStatus): Boolean =
+      copyRepository.get(id).exists(_.status == initialCopyStatus)
+
+    def requestIsAccepted(id: Id[CopyRequest]): Boolean =
+      copyRequestRepository.get(id).exists(_.status.isAccepted)
+
+    def requestIsOnWaitingList(id: Id[CopyRequest]): Boolean =
+      copyRequestRepository.get(id).exists(_.status.isOnWaitingList)
+
+    def requestIsRejected(id: Id[CopyRequest]): Boolean =
+      copyRequestRepository.get(id).exists(_.status.isRejected)
+
+    def requestIsFulfilled(id: Id[CopyRequest]): Boolean =
+      copyRequestRepository.get(id).exists(_.status.isFulfilled)
+
+    def requestIsCancelled(id: Id[CopyRequest]): Boolean =
+      copyRequestRepository.get(id).exists(_.status.isCancelled)
+
+    def requestIsNotUpdated(id: Id[CopyRequest], initialRequestStatus: RequestStatus): Boolean =
+      copyRequestRepository.get(id).exists(_.status == initialRequestStatus)
   }
 
   trait WithRequestPending extends WithBasicSetup {
