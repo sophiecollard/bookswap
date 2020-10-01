@@ -23,6 +23,7 @@ libraryDependencies ++= {
 }
 
 scalacOptions ++= Seq(
+  "-deprecation",
   "-Xfatal-warnings",
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
