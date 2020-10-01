@@ -48,6 +48,16 @@ object Error {
     final case class InvalidState(override val message: String)
       extends ServiceError(message)
 
+    final case class FailedToDeleteResource[A](resourceName: String, id: Id[A])
+      extends ServiceError(
+        message = s"$resourceName [${id.value}] could not be deleted."
+      )
+
+    final case class FailedToDeleteEdition(isbn: ISBN)
+      extends ServiceError(
+        message = s"Edition [${isbn.value}] could not be deleted."
+      )
+
     final case class ResourceNotFound[A](resourceName: String, id: Id[A])
       extends ServiceError(
         message = s"$resourceName [${id.value}] was not found."

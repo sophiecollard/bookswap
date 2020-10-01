@@ -10,10 +10,10 @@ import doobie.{ConnectionIO, Query0, Update}
 trait CopyRequestRepository[F[_]] {
 
   /** Creates a new CopyRequest */
-  def create(copyRequest: CopyRequest): F[Unit]
+  def create(copyRequest: CopyRequest): F[Boolean]
 
   /** Updates the status of the specified CopyRequest */
-  def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Unit]
+  def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Boolean]
 
   /** Updates the statuses of all pending CopyRequests for the specified Copy */
   def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
@@ -35,15 +35,15 @@ trait CopyRequestRepository[F[_]] {
 object CopyRequestRepository {
 
   def create: CopyRequestRepository[ConnectionIO] = new CopyRequestRepository[ConnectionIO] {
-    override def create(copyRequest: CopyRequest): ConnectionIO[Unit] =
+    override def create(copyRequest: CopyRequest): ConnectionIO[Boolean] =
       createUpdate
         .run(copyRequest)
-        .map(_ => ())
+        .map(_ == 1)
 
-    override def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): ConnectionIO[Unit] =
+    override def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): ConnectionIO[Boolean] =
       updateStatusUpdate(id)
         .run(newStatus)
-        .map(_ => ())
+        .map(_ == 1)
 
     override def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): ConnectionIO[Unit] =
       updatePendingRequestsStatusesUpdate(copyId)

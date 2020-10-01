@@ -9,13 +9,13 @@ import doobie.{ConnectionIO, Query0, Update, Update0}
 trait CopyRepository[F[_]] {
 
   /** Creates a new Copy */
-  def create(copy: Copy): F[Unit]
+  def create(copy: Copy): F[Boolean]
 
   /** Updates the condition of the specified Copy */
-  def updateCondition(id: Id[Copy], condition: Condition): F[Unit]
+  def updateCondition(id: Id[Copy], condition: Condition): F[Boolean]
 
   /** Updates the status of the specified Copy */
-  def updateStatus(id: Id[Copy], status: CopyStatus): F[Unit]
+  def updateStatus(id: Id[Copy], status: CopyStatus): F[Boolean]
 
   /** Returns the specified Copy */
   def get(id: Id[Copy]): F[Option[Copy]]
@@ -25,20 +25,20 @@ trait CopyRepository[F[_]] {
 object CopyRepository {
 
   def create: CopyRepository[ConnectionIO] = new CopyRepository[ConnectionIO] {
-    override def create(copy: Copy): ConnectionIO[Unit] =
+    override def create(copy: Copy): ConnectionIO[Boolean] =
       createUpdate
         .run(copy)
-        .map(_ => ())
+        .map(_ == 1)
 
-    override def updateCondition(id: Id[Copy], condition: Condition): ConnectionIO[Unit] =
+    override def updateCondition(id: Id[Copy], condition: Condition): ConnectionIO[Boolean] =
       updateConditionUpdate(id, condition)
         .run
-        .map(_ => ())
+        .map(_ == 1)
 
-    override def updateStatus(id: Id[Copy], status: CopyStatus): ConnectionIO[Unit] =
+    override def updateStatus(id: Id[Copy], status: CopyStatus): ConnectionIO[Boolean] =
       updateStatusUpdate(id, status)
         .run
-        .map(_ => ())
+        .map(_ == 1)
 
     override def get(id: Id[Copy]): ConnectionIO[Option[Copy]] =
       getQuery(id)

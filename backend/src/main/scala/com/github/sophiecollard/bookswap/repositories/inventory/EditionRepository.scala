@@ -9,13 +9,13 @@ import doobie.implicits.javatime._
 trait EditionRepository[F[_]] {
 
   /** Creates a new Edition */
-  def create(edition: Edition): F[Unit]
+  def create(edition: Edition): F[Boolean]
 
   /** Updates the details of the specified Edition */
-  def update(isbn: ISBN, details: EditionDetails): F[Unit]
+  def update(isbn: ISBN, details: EditionDetails): F[Boolean]
 
   /** Deletes the specified Edition */
-  def delete(isbn: ISBN): F[Unit]
+  def delete(isbn: ISBN): F[Boolean]
 
   /** Returns the specified Edition */
   def get(isbn: ISBN): F[Option[Edition]]
@@ -25,20 +25,20 @@ trait EditionRepository[F[_]] {
 object EditionRepository {
 
   def create: EditionRepository[ConnectionIO] = new EditionRepository[ConnectionIO] {
-    override def create(edition: Edition): ConnectionIO[Unit] =
+    override def create(edition: Edition): ConnectionIO[Boolean] =
       createUpdate
         .run(edition)
-        .map(_ => ())
+        .map(_ == 1)
 
-    override def update(isbn: ISBN, details: EditionDetails): ConnectionIO[Unit] =
+    override def update(isbn: ISBN, details: EditionDetails): ConnectionIO[Boolean] =
       updateUpdate(isbn, details)
         .run
-        .map(_ => ())
+        .map(_ == 1)
 
-    override def delete(isbn: ISBN): ConnectionIO[Unit] =
+    override def delete(isbn: ISBN): ConnectionIO[Boolean] =
       deleteUpdate(isbn)
         .run
-        .map(_ => ())
+        .map(_ == 1)
 
     override def get(isbn: ISBN): ConnectionIO[Option[Edition]] =
       getQuery(isbn)

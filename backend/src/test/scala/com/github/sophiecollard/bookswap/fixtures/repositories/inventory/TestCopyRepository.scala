@@ -7,23 +7,32 @@ import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
 class TestCopyRepository extends CopyRepository[CatsId] {
 
-  def create(copy: Copy): CatsId[Unit] =
-    store += ((copy.id, copy))
+  def create(copy: Copy): CatsId[Boolean] = {
+    store.get(copy.id) match {
+      case Some(_) =>
+        false
+      case None =>
+        store += ((copy.id, copy))
+        true
+    }
+  }
 
-  def updateCondition(id: Id[Copy], condition: Condition): CatsId[Unit] =
+  def updateCondition(id: Id[Copy], condition: Condition): CatsId[Boolean] =
     store.get(id) match {
       case Some(copy) =>
         store += ((id, copy.copy(condition = condition)))
+        true
       case None =>
-        ()
+        false
     }
 
-  def updateStatus(id: Id[Copy], status: CopyStatus): CatsId[Unit] =
+  def updateStatus(id: Id[Copy], status: CopyStatus): CatsId[Boolean] =
     store.get(id) match {
       case Some(copy) =>
         store += ((id, copy.copy(status = status)))
+        true
       case None =>
-        ()
+        false
     }
 
   def get(id: Id[Copy]): CatsId[Option[Copy]] =

@@ -5,7 +5,7 @@ import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToDeleteResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances._
@@ -16,7 +16,7 @@ trait AuthorService[F[_]] {
 
   def get(id: Id[Author]): F[ServiceErrorOr[Author]]
 
-  def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[Unit]]
+  def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
 
 }
 
@@ -34,9 +34,12 @@ object AuthorService {
           .map(_.toRight[ServiceError](ResourceNotFound("Author", id)))
           .transact(transactor)
 
-      override def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[Unit]] =
+      override def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]] =
         authorizationService.authorize(userId) {
-          repository.delete(id).transact(transactor)
+          repository
+            .delete(id)
+            .mapB[Either[ServiceError, Unit]](Right(()), Left(FailedToDeleteResource("Author", id)))
+            .transact(transactor)
         }
     }
 

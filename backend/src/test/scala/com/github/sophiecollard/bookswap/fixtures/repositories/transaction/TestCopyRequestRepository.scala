@@ -9,15 +9,23 @@ import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRep
 
 class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
 
-  def create(copyRequest: CopyRequest): CatsId[Unit] =
-    store += ((copyRequest.id, copyRequest))
+  def create(copyRequest: CopyRequest): CatsId[Boolean] = {
+    store.get(copyRequest.id) match {
+      case Some(_) =>
+        false
+      case None =>
+        store += ((copyRequest.id, copyRequest))
+        true
+    }
+  }
 
-  def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): CatsId[Unit] =
+  def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): CatsId[Boolean] =
     store.get(id) match {
       case Some(copyRequest) =>
         store += ((id, copyRequest.copy(status = newStatus)))
+        true
       case None =>
-        ()
+        false
     }
 
   def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =

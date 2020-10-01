@@ -9,7 +9,7 @@ trait AuthorRepository[F[_]] {
 
   def get(id: Id[Author]): F[Option[Author]]
 
-  def delete(id: Id[Author]): F[Unit]
+  def delete(id: Id[Author]): F[Boolean]
 
 }
 
@@ -20,10 +20,10 @@ object AuthorRepository {
       getQuery(id)
         .option
 
-    override def delete(id: Id[Author]): ConnectionIO[Unit] =
+    override def delete(id: Id[Author]): ConnectionIO[Boolean] =
       deleteUpdate(id)
         .run
-        .map(_ => ())
+        .map(_ == 1)
   }
 
   def getQuery(id: Id[Author]): Query0[Author] =
