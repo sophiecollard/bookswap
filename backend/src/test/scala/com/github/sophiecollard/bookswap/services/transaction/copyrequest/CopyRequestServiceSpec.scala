@@ -4,13 +4,15 @@ import java.time.{LocalDateTime, ZoneId}
 
 import cats.{~>, Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
-import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotTheRequestIssuer, NotTheRequestedCopyOwner}
+import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
+import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotAnActiveUser, NotTheRequestIssuer, NotTheRequestedCopyOwner}
 import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
+import com.github.sophiecollard.bookswap.services.authorization.Instances
 import com.github.sophiecollard.bookswap.services.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
@@ -35,16 +37,24 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'create' method" should {
-    "create a new copy request" in new WithBasicSetup {
-      withRight(copyRequestService.create(copyId)(requestIssuerId)) { returnedRequest =>
-        assert(returnedRequest.copyId == copyId)
-        assert(returnedRequest.requestedBy == requestIssuerId)
-        assert(returnedRequest.status == initialRequestStatus)
+    "deny any request from a user that is not active" in new WithBasicSetup {
+      withFailedAuthorization(copyRequestService.create(copyId)(bannedUserId)) {
+        _ shouldBe NotAnActiveUser(bannedUserId)
+      }
+    }
 
-        withSome(copyRequestRepository.get(returnedRequest.id)) { createdRequest =>
-          assert(createdRequest.copyId == copyId)
-          assert(createdRequest.requestedBy == requestIssuerId)
-          assert(createdRequest.status == initialRequestStatus)
+    "create a new copy request" in new WithBasicSetup {
+      withSuccessfulAuthorization(copyRequestService.create(copyId)(requestIssuerId)) {
+        withNoServiceError { returnedRequest =>
+          assert(returnedRequest.copyId == copyId)
+          assert(returnedRequest.requestedBy == requestIssuerId)
+          assert(returnedRequest.status == initialRequestStatus)
+
+          withSome(copyRequestRepository.get(returnedRequest.id)) { createdRequest =>
+            assert(createdRequest.copyId == copyId)
+            assert(createdRequest.requestedBy == requestIssuerId)
+            assert(createdRequest.status == initialRequestStatus)
+          }
         }
       }
     }
@@ -414,6 +424,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
+    val userRepository = new TestUserRepository
     val copyRepository = new TestCopyRepository
     val copyRequestRepository = new TestCopyRequestRepository
 
@@ -426,6 +437,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     val copyRequestService: CopyRequestService[CatsId] =
       CopyRequestService.create(
+        authorizationByActiveStatus = Instances.byActiveStatus(userRepository),
         authorizationByRequestIssuer = Authorization.byRequestIssuer(copyRequestRepository),
         authorizationByCopyOwner = Authorization.byCopyOwner(copyRequestRepository, copyRepository),
         copyRequestRepository,
@@ -433,10 +445,17 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
         catsIdTransactor
       )
 
+    val (copyOwnerId, bannedUserId) = (Id.generate[User], Id.generate[User])
+    val (requestIssuerId, nextRequestIssuerId) = (Id.generate[User], Id.generate[User])
     val (copyId, requestId, nextRequestId) = (Id.generate[Copy], Id.generate[CopyRequest], Id.generate[CopyRequest])
-    val (copyOwnerId, requestIssuerId, nextRequestIssuerId) = (Id.generate[User], Id.generate[User], Id.generate[User])
     val initialCopyStatus = CopyStatus.available
     val (initialRequestStatus, initialNextRequestStatus) = (RequestStatus.pending, RequestStatus.pending)
+
+    private val bannedUser = User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned)
+    private val requestIssuer = User(id = requestIssuerId, name = Name("RequestIssuer"), status = UserStatus.Active)
+
+    userRepository.create(bannedUser)
+    userRepository.create(requestIssuer)
 
     private val copy = Copy(
       id = copyId,

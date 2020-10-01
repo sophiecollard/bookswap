@@ -13,6 +13,7 @@ import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToCreat
 import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
+import com.github.sophiecollard.bookswap.services.authorization.Instances.{ByActiveStatus, WithAuthorizationByActiveStatus}
 import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.services.syntax._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
@@ -29,7 +30,7 @@ trait CopyRequestService[F[_]] {
   def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]]
 
   /** Invoked by a registered user to create a new CopyRequest */
-  def create(copyId: Id[Copy])(userId: Id[User]): F[ServiceErrorOr[CopyRequest]]
+  def create(copyId: Id[Copy])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[CopyRequest]]]
 
   /** Invoked by a registered user to cancel one of their CopyRequests */
   def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]]
@@ -50,6 +51,7 @@ object CopyRequestService {
   type Statuses = (RequestStatus, CopyStatus)
 
   def create[F[_]: Monad, G[_]: Monad](
+    authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByRequestIssuer: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
     authorizationByCopyOwner: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
     copyRequestRepository: CopyRequestRepository[G],
@@ -65,21 +67,22 @@ object CopyRequestService {
           .map(_.toRight[ServiceError](ResourceNotFound("CopyRequest", id)))
           .transact(transactor)
 
-      override def create(copyId: Id[Copy])(userId: Id[User]): F[ServiceErrorOr[CopyRequest]] = {
-        val copyRequest = CopyRequest(
-          id = Id.generate[CopyRequest],
-          copyId,
-          requestedBy = userId,
-          requestedOn = now,
-          status = Pending
-        )
+      override def create(copyId: Id[Copy])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[CopyRequest]]] =
+        authorizationByActiveStatus.authorize(userId) {
+          val copyRequest = CopyRequest(
+            id = Id.generate[CopyRequest],
+            copyId,
+            requestedBy = userId,
+            requestedOn = now,
+            status = Pending
+          )
 
-        copyRequestRepository
-          .create(copyRequest)
-          .ifTrue(copyRequest)
-          .elseIfFalse[ServiceError](FailedToCreateResource("CopyRequest", copyRequest.id))
-          .transact(transactor)
-      }
+          copyRequestRepository
+            .create(copyRequest)
+            .ifTrue(copyRequest)
+            .elseIfFalse[ServiceError](FailedToCreateResource("CopyRequest", copyRequest.id))
+            .transact(transactor)
+        }
 
       override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]] =
         authorizationByRequestIssuer.authorize(AuthorizationInput(userId, requestId)) {
