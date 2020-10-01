@@ -9,39 +9,25 @@ import doobie.implicits.javatime._
 
 trait CopyRequestRepository[F[_]] {
 
-  /**
-    * Creates a new request
-    */
+  /** Creates a new request */
   def create(copyRequest: CopyRequest): F[Unit]
 
-  /**
-    * Updates the status of the specified request
-    */
+  /** Updates the status of the specified request */
   def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Unit]
 
-  /**
-    * Updates the statuses of all pending requests for the specified copy
-    */
+  /** Updates the statuses of all pending requests for the specified copy */
   def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
-  /**
-    * Updates the status of any accepted request for the specified copy
-    */
+  /** Updates the status of any accepted request for the specified copy */
   def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
-  /**
-    * Updates the statuses of all requests on the waiting list for the specified copy
-    */
+  /** Updates the statuses of all requests on the waiting list for the specified copy */
   def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
-  /**
-    * Returns the specified request (if any)
-    */
+  /** Returns the specified request (if any) */
   def get(id: Id[CopyRequest]): F[Option[CopyRequest]]
 
-  /**
-    * Returns the first request added to the waiting list for the specified copy
-    */
+  /** Returns the first request added to the waiting list for the specified copy */
   def findFirstOnWaitingList(copyId: Id[Copy]): F[Option[CopyRequest]]
 
 }
