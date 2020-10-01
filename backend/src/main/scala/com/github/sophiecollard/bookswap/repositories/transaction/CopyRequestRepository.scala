@@ -3,31 +3,31 @@ package com.github.sophiecollard.bookswap.repositories.transaction
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
-import doobie.{ConnectionIO, Query0, Update}
 import doobie.implicits._
 import doobie.implicits.javatime._
+import doobie.{ConnectionIO, Query0, Update}
 
 trait CopyRequestRepository[F[_]] {
 
-  /** Creates a new request */
+  /** Creates a new CopyRequest */
   def create(copyRequest: CopyRequest): F[Unit]
 
-  /** Updates the status of the specified request */
+  /** Updates the status of the specified CopyRequest */
   def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): F[Unit]
 
-  /** Updates the statuses of all pending requests for the specified copy */
+  /** Updates the statuses of all pending CopyRequests for the specified Copy */
   def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
-  /** Updates the status of any accepted request for the specified copy */
+  /** Updates the status of any accepted CopyRequest for the specified Copy */
   def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
-  /** Updates the statuses of all requests on the waiting list for the specified copy */
+  /** Updates the statuses of all CopyRequests on the waiting list for the specified Copy */
   def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): F[Unit]
 
-  /** Returns the specified request (if any) */
+  /** Returns the specified CopyRequest */
   def get(id: Id[CopyRequest]): F[Option[CopyRequest]]
 
-  /** Returns the first request added to the waiting list for the specified copy */
+  /** Returns the first CopyRequest added to the waiting list for the specified Copy */
   def findFirstOnWaitingList(copyId: Id[Copy]): F[Option[CopyRequest]]
 
 }
