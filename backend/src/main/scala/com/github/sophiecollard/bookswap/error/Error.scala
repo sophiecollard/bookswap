@@ -17,6 +17,11 @@ object Error {
 
   object AuthorizationError {
 
+    final case class NotAnActiveUser(userId: Id[User])
+      extends AuthorizationError(
+        message = s"User [${userId.value}] is not an active user."
+      )
+
     final case class NotAnAdmin(userId: Id[User])
       extends AuthorizationError(
         message = s"User [${userId.value}] is not an admin."
