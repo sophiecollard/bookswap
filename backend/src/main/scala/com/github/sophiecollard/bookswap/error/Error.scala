@@ -53,6 +53,26 @@ object Error {
     final case class InvalidState(override val message: String)
       extends ServiceError(message)
 
+    final case class FailedToCreateResource[A](resourceName: String, id: Id[A])
+      extends ServiceError(
+        message = s"$resourceName [${id.value}] could not be created."
+      )
+
+    final case class FailedToCreateEdition(isbn: ISBN)
+      extends ServiceError(
+        message = s"Edition [${isbn.value}] could not be created."
+      )
+
+    final case class FailedToUpdateResource[A](resourceName: String, id: Id[A])
+      extends ServiceError(
+        message = s"$resourceName [${id.value}] could not be updated."
+      )
+
+    final case class FailedToUpdateEdition(isbn: ISBN)
+      extends ServiceError(
+        message = s"Edition [${isbn.value}] could not be updated."
+      )
+
     final case class FailedToDeleteResource[A](resourceName: String, id: Id[A])
       extends ServiceError(
         message = s"$resourceName [${id.value}] could not be deleted."

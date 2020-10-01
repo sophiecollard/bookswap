@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToCreateResource, FailedToUpdateResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
@@ -76,8 +76,9 @@ object CopyRequestService {
 
         copyRequestRepository
           .create(copyRequest)
+          .ifTrue(copyRequest)
+          .elseIfFalse[ServiceError](FailedToCreateResource("CopyRequest", copyRequest.id))
           .transact(transactor)
-          .map(_ => copyRequest.asRight[ServiceError])
       }
 
       override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]] =
@@ -125,7 +126,7 @@ object CopyRequestService {
               .pure[F]
               .asEitherT
               .leftMap[ServiceError](_ => ServiceError.InvalidState(s"Invalid state: $initialState"))
-              .semiflatMap(performStateUpdate(copyRequest.id, copy.id, initialState))
+              .flatMapF(performStateUpdate(copyRequest.id, copy.id, initialState))
           } yield statuses
         ).value
 
@@ -135,31 +136,34 @@ object CopyRequestService {
         initialState: InitialState
       )(
         stateUpdate: StateUpdate
-      ): F[Statuses] =
-        (
-          stateUpdate match {
-            case UpdateRequestStatus(requestStatus) =>
-              copyRequestRepository.updateStatus(requestId, requestStatus) as
-                (requestStatus, initialState.copyStatus)
-            case UpdateRequestAndNextRequestStatuses(requestStatus, nextRequestId, nextRequestStatus) =>
-              copyRequestRepository.updateStatus(requestId, requestStatus) >>
-                copyRequestRepository.updateStatus(nextRequestId, nextRequestStatus) as
-                (requestStatus, initialState.copyStatus)
-            case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
-              copyRequestRepository.updateStatus(requestId, requestStatus) >>
-                copyRepository.updateStatus(copyId, copyStatus) as
-                (requestStatus, copyStatus)
-            case UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus) =>
-              copyRequestRepository.updateStatus(requestId, requestStatus) >>
-                copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
-                copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
-                copyRepository.updateStatus(copyId, copyStatus) as
-                (requestStatus, copyStatus)
-            case NoUpdate =>
-              (initialState.requestStatus, initialState.copyStatus)
-                .pure[G]
-          }
-        ).transact(transactor)
+      ): F[Either[ServiceError, Statuses]] = {
+        val maybeStatuses = stateUpdate match {
+          case UpdateRequestStatus(requestStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) ifTrue
+              (requestStatus, initialState.copyStatus)
+          case UpdateRequestAndNextRequestStatuses(requestStatus, nextRequestId, nextRequestStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRequestRepository.updateStatus(nextRequestId, nextRequestStatus) ifTrue
+              (requestStatus, initialState.copyStatus)
+          case UpdateRequestAndCopyStatuses(requestStatus, copyStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRepository.updateStatus(copyId, copyStatus) ifTrue
+              (requestStatus, copyStatus)
+          case UpdateRequestAndOpenRequestsAndCopyStatuses(requestStatus, openRequestsStatus, copyStatus) =>
+            copyRequestRepository.updateStatus(requestId, requestStatus) >>
+              copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
+              copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
+              copyRepository.updateStatus(copyId, copyStatus) ifTrue
+              (requestStatus, copyStatus)
+          case NoUpdate =>
+            (initialState.requestStatus, initialState.copyStatus)
+              .some.pure[G]
+        }
+
+        maybeStatuses
+          .elseIfFalse[ServiceError](FailedToUpdateResource("CopyRequest", requestId))
+          .transact(transactor)
+      }
     }
   }
 

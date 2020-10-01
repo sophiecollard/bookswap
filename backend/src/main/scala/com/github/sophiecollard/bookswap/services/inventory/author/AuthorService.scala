@@ -38,7 +38,8 @@ object AuthorService {
         authorizationService.authorize(userId) {
           repository
             .delete(id)
-            .mapB[Either[ServiceError, Unit]](Right(()), Left(FailedToDeleteResource("Author", id)))
+            .ifTrue(())
+            .elseIfFalse[ServiceError](FailedToDeleteResource("Author", id))
             .transact(transactor)
         }
     }

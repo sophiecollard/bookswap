@@ -63,7 +63,9 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
       val condition = Condition.SomeSignsOfUse
 
       withSuccessfulAuthorization(copyService.updateCondition(copyId, condition)(copyOwnerId)) {
-        _ shouldBe condition
+        withNoServiceError {
+          _ shouldBe condition
+        }
       }
 
       assert(copyConditionIs(copyId, condition))
