@@ -1,19 +1,23 @@
 package com.github.sophiecollard.bookswap.repositories.inventory
 
-import doobie.implicits._
-import doobie.implicits.javatime._
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
-import doobie.{ConnectionIO, Query0, Update0}
+import doobie.implicits._
+import doobie.implicits.javatime._
+import doobie.{ConnectionIO, Query0, Update, Update0}
 
 trait CopyRepository[F[_]] {
 
+  /** Creates a new Copy */
   def create(copy: Copy): F[Unit]
 
+  /** Updates the condition of the specified Copy */
   def updateCondition(id: Id[Copy], condition: Condition): F[Unit]
 
+  /** Updates the status of the specified Copy */
   def updateStatus(id: Id[Copy], status: CopyStatus): F[Unit]
 
+  /** Returns the specified Copy */
   def get(id: Id[Copy]): F[Option[Copy]]
 
 }
@@ -22,8 +26,8 @@ object CopyRepository {
 
   def create: CopyRepository[ConnectionIO] = new CopyRepository[ConnectionIO] {
     override def create(copy: Copy): ConnectionIO[Unit] =
-      insertCopyUpdate(copy)
-        .run
+      createUpdate
+        .run(copy)
         .map(_ => ())
 
     override def updateCondition(id: Id[Copy], condition: Condition): ConnectionIO[Unit] =
@@ -41,12 +45,14 @@ object CopyRepository {
         .option
   }
 
-  def insertCopyUpdate(copy: Copy): Update0 =
-    sql"""
+  val createUpdate: Update[Copy] =
+    Update[Copy](
+      s"""
          |INSERT INTO copies (id, isbn, offered_by, offered_on, condition, status)
-         |VALUES (${copy.id}, ${copy.isbn}, ${copy.offeredBy}, ${copy.offeredOn}, ${copy.condition}, ${copy.status})
+         |VALUES (?, ?, ?, ?, ?, ?)
          |ON CONFLICT id DO NOTHING
-       """.stripMargin.update
+       """.stripMargin
+    )
 
   def updateConditionUpdate(id: Id[Copy], condition: Condition): Update0 =
     sql"""
