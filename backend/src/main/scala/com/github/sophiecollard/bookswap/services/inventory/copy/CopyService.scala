@@ -13,6 +13,7 @@ import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceError
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization.AuthorizationService
+import com.github.sophiecollard.bookswap.services.authorization.Instances.{ByActiveStatus, WithAuthorizationByActiveStatus}
 import com.github.sophiecollard.bookswap.services.inventory.copy.Authorization._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.{InitialState, StateMachine, StateUpdate}
@@ -26,7 +27,7 @@ trait CopyService[F[_]] {
   def get(id: Id[Copy]): F[ServiceErrorOr[Copy]]
 
   /** Invoked by a registered user to create a new Copy */
-  def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[ServiceErrorOr[Copy]]
+  def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]]
 
   /** Invoked by the Copy owner to update its condition */
   def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Condition]]]
@@ -39,6 +40,7 @@ trait CopyService[F[_]] {
 object CopyService {
 
   def create[F[_]: Monad, G[_]: Monad](
+    authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByCopyOwner: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
     copyRepository: CopyRepository[G],
     copyRequestRepository: CopyRequestRepository[G],
@@ -52,22 +54,23 @@ object CopyService {
         .map(_.toRight[ServiceError](ResourceNotFound("Copy", id)))
         .transact(transactor)
 
-    override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[ServiceErrorOr[Copy]] = {
-      val copy = Copy(
-        id = Id.generate[Copy],
-        edition,
-        offeredBy = userId,
-        offeredOn = now,
-        condition,
-        status = Available
-      )
+    override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]] =
+      authorizationByActiveStatus.authorize(userId) {
+        val copy = Copy(
+          id = Id.generate[Copy],
+          edition,
+          offeredBy = userId,
+          offeredOn = now,
+          condition,
+          status = Available
+        )
 
-      copyRepository
-        .create(copy)
-        .ifTrue(copy)
-        .elseIfFalse[ServiceError](FailedToCreateResource("Copy", copy.id))
-        .transact(transactor)
-    }
+        copyRepository
+          .create(copy)
+          .ifTrue(copy)
+          .elseIfFalse[ServiceError](FailedToCreateResource("Copy", copy.id))
+          .transact(transactor)
+      }
 
     override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Condition]]] =
       authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
