@@ -17,7 +17,7 @@ object Authorization {
 
   final case class AuthorizationInput(userId: Id[User], copyId: Id[Copy])
 
-  def createCopyOwnerAuthorizationService[F[_]: Monad](
+  def byCopyOwner[F[_]: Monad](
     copyRepository: CopyRepository[F]
   ): AuthorizationService[F, AuthorizationInput, ByCopyOwner] =
     AuthorizationService.create[F, AuthorizationInput, ByCopyOwner] { case AuthorizationInput(userId, copyId) =>

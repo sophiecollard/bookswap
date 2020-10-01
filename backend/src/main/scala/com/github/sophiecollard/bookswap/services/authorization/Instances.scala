@@ -14,7 +14,7 @@ object Instances {
 
   type WithAuthorizationByActiveStatus[R] = WithAuthorization[R, ByActiveStatus]
 
-  def createAuthorizationServiceByActiveStatus[F[_]: Monad](
+  def byActiveStatus[F[_]: Monad](
     userRepository: UserRepository[F]
   ): AuthorizationService[F, Id[User], ByActiveStatus] =
     AuthorizationService.create[F, Id[User], ByActiveStatus] { userId =>
@@ -30,7 +30,7 @@ object Instances {
 
   type WithAuthorizationByAdminStatus[R] = WithAuthorization[R, ByAdminStatus]
 
-  def createAuthorizationServiceByAdminStatus[F[_]: Monad](
+  def byAdminStatus[F[_]: Monad](
     userRepository: UserRepository[F]
   ): AuthorizationService[F, Id[User], ByAdminStatus] =
     AuthorizationService.create[F, Id[User], ByAdminStatus] { userId =>

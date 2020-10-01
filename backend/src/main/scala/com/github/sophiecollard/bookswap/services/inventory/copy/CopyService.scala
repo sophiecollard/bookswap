@@ -39,7 +39,7 @@ trait CopyService[F[_]] {
 object CopyService {
 
   def create[F[_]: Monad, G[_]: Monad](
-    copyOwnerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
+    authorizationByCopyOwner: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
     copyRepository: CopyRepository[G],
     copyRequestRepository: CopyRequestRepository[G],
     transactor: G ~> F
@@ -70,7 +70,7 @@ object CopyService {
     }
 
     override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Condition]]] =
-      copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, id)) {
+      authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
         copyRepository
           .updateCondition(id, condition)
           .ifTrue(condition)
@@ -79,7 +79,7 @@ object CopyService {
       }
 
     override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]] =
-      copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, id)) {
+      authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
         copyRepository
           .get(id)
           .transact(transactor)

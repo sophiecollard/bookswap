@@ -426,8 +426,8 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     val copyRequestService: CopyRequestService[CatsId] =
       CopyRequestService.create(
-        requestIssuerAuthorizationService = Authorization.createRequestIssuerAuthorizationService(copyRequestRepository),
-        copyOwnerAuthorizationService = Authorization.createCopyOwnerAuthorizationService(copyRequestRepository, copyRepository),
+        authorizationByRequestIssuer = Authorization.byRequestIssuer(copyRequestRepository),
+        authorizationByCopyOwner = Authorization.byCopyOwner(copyRequestRepository, copyRepository),
         copyRequestRepository,
         copyRepository,
         catsIdTransactor

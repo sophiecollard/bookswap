@@ -50,8 +50,8 @@ object CopyRequestService {
   type Statuses = (RequestStatus, CopyStatus)
 
   def create[F[_]: Monad, G[_]: Monad](
-    requestIssuerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
-    copyOwnerAuthorizationService: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
+    authorizationByRequestIssuer: AuthorizationService[F, AuthorizationInput, ByRequestIssuer],
+    authorizationByCopyOwner: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
     copyRequestRepository: CopyRequestRepository[G],
     copyRepository: CopyRepository[G],
     transactor: G ~> F
@@ -82,22 +82,22 @@ object CopyRequestService {
       }
 
       override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]] =
-        requestIssuerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByRequestIssuer.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleCancelCommand)
         }
 
       override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
-        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByCopyOwner.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleAcceptCommand)
         }
 
       override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
-        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByCopyOwner.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleRejectCommand)
         }
 
       override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
-        copyOwnerAuthorizationService.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByCopyOwner.authorize(AuthorizationInput(userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleMarkAsFulfilledCommand)
         }
 

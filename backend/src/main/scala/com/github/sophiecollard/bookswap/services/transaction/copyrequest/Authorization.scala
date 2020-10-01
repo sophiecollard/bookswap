@@ -21,7 +21,7 @@ object Authorization {
 
   final case class AuthorizationInput(userId: Id[User], copyRequestId: Id[CopyRequest])
 
-  def createCopyOwnerAuthorizationService[F[_]: Monad](
+  def byCopyOwner[F[_]: Monad](
     copyRequestRepository: CopyRequestRepository[F],
     copyRepository: CopyRepository[F]
   ): AuthorizationService[F, AuthorizationInput, ByCopyOwner] =
@@ -39,7 +39,7 @@ object Authorization {
       }
     }
 
-  def createRequestIssuerAuthorizationService[F[_]: Monad](
+  def byRequestIssuer[F[_]: Monad](
     copyRequestRepository: CopyRequestRepository[F]
   ): AuthorizationService[F, AuthorizationInput, ByRequestIssuer] =
     AuthorizationService.create[F, AuthorizationInput, ByRequestIssuer] { case AuthorizationInput(userId, copyRequestId) =>
