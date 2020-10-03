@@ -44,8 +44,8 @@ object UserRepository {
 
   def deleteUpdate(id: Id[User]): Update0 =
     sql"""
-         |DELETE
-         |FROM users
+         |UPDATE users
+         |SET status = 'deleted'
          |WHERE id = $id
        """.stripMargin.update
 
