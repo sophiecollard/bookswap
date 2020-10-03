@@ -22,14 +22,22 @@ libraryDependencies ++= {
 
   val enumeratum = Seq(
     "com.beachape"  %% "enumeratum"        % "1.6.1",
-    "com.beachape"  %% "enumeratum-doobie" % "1.6.0",
+    "com.beachape"  %% "enumeratum-doobie" % "1.6.0"
   )
+
+  val http4s = Seq(
+    "org.http4s" %% "http4s-async-http-client",
+    "org.http4s" %% "http4s-blaze-server",
+    "org.http4s" %% "http4s-circe",
+    "org.http4s" %% "http4s-dsl",
+    "org.http4s" %% "http4s-jetty"
+  ).map(_ % "0.21.4")
 
   val scalatest = Seq(
     "org.scalatest" %% "scalatest" % "3.2.0" % Test
   )
 
-  cats ++ circe ++ doobie ++ enumeratum ++ scalatest
+  cats ++ circe ++ doobie ++ enumeratum ++ http4s ++ scalatest
 }
 
 scalacOptions ++= Seq(
