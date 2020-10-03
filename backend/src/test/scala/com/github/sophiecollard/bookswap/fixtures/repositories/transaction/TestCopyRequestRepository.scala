@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRep
 
 class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
 
-  def create(copyRequest: CopyRequest): CatsId[Boolean] = {
+  override def create(copyRequest: CopyRequest): CatsId[Boolean] = {
     store.get(copyRequest.id) match {
       case Some(_) =>
         false
@@ -19,7 +19,7 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
     }
   }
 
-  def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): CatsId[Boolean] =
+  override def updateStatus(id: Id[CopyRequest], newStatus: RequestStatus): CatsId[Boolean] =
     store.get(id) match {
       case Some(copyRequest) =>
         store += ((id, copyRequest.copy(status = newStatus)))
@@ -28,7 +28,7 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
         false
     }
 
-  def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+  override def updatePendingRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
     store = store.map { case (id, request) =>
       request.status match {
         case Pending =>
@@ -38,7 +38,7 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
       }
     }
 
-  def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+  override def updateAcceptedRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
     store = store.map { case (id, request) =>
       request.status match {
         case Accepted(_) =>
@@ -48,7 +48,7 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
       }
     }
 
-  def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
+  override def updateWaitingListRequestsStatuses(copyId: Id[Copy], newStatus: RequestStatus): CatsId[Unit] =
     store = store.map { case (id, request) =>
       request.status match {
         case OnWaitingList(_) =>
@@ -58,10 +58,10 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
       }
     }
 
-  def get(id: Id[CopyRequest]): CatsId[Option[CopyRequest]] =
+  override def get(id: Id[CopyRequest]): CatsId[Option[CopyRequest]] =
     store.get(id)
 
-  def findFirstOnWaitingList(copyId: Id[Copy]): CatsId[Option[CopyRequest]] =
+  override def findFirstOnWaitingList(copyId: Id[Copy]): CatsId[Option[CopyRequest]] =
     store
       .values
       .toList

@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.repositories.user.UserRepository
 
 class TestUserRepository extends UserRepository[CatsId] {
 
-  def create(user: User): CatsId[Boolean] =
+  override def create(user: User): CatsId[Boolean] =
     store.get(user.id) match {
       case Some(_) =>
         false
@@ -16,7 +16,7 @@ class TestUserRepository extends UserRepository[CatsId] {
         true
     }
 
-  def delete(id: Id[User]): CatsId[Boolean] = {
+  override def delete(id: Id[User]): CatsId[Boolean] = {
     store.get(id) match {
       case Some(user) =>
         store += ((id, user.copy(status = UserStatus.Deleted)))
@@ -26,7 +26,7 @@ class TestUserRepository extends UserRepository[CatsId] {
     }
   }
 
-  def get(id: Id[User]): CatsId[Option[User]] =
+  override def get(id: Id[User]): CatsId[Option[User]] =
     store.get(id)
 
   private var store: Map[Id[User], User] =

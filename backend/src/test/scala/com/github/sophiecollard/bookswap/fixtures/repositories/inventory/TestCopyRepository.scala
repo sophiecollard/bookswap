@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
 class TestCopyRepository extends CopyRepository[CatsId] {
 
-  def create(copy: Copy): CatsId[Boolean] = {
+  override def create(copy: Copy): CatsId[Boolean] = {
     store.get(copy.id) match {
       case Some(_) =>
         false
@@ -17,7 +17,7 @@ class TestCopyRepository extends CopyRepository[CatsId] {
     }
   }
 
-  def updateCondition(id: Id[Copy], condition: Condition): CatsId[Boolean] =
+  override def updateCondition(id: Id[Copy], condition: Condition): CatsId[Boolean] =
     store.get(id) match {
       case Some(copy) =>
         store += ((id, copy.copy(condition = condition)))
@@ -26,7 +26,7 @@ class TestCopyRepository extends CopyRepository[CatsId] {
         false
     }
 
-  def updateStatus(id: Id[Copy], status: CopyStatus): CatsId[Boolean] =
+  override def updateStatus(id: Id[Copy], status: CopyStatus): CatsId[Boolean] =
     store.get(id) match {
       case Some(copy) =>
         store += ((id, copy.copy(status = status)))
@@ -35,7 +35,7 @@ class TestCopyRepository extends CopyRepository[CatsId] {
         false
     }
 
-  def get(id: Id[Copy]): CatsId[Option[Copy]] =
+  override def get(id: Id[Copy]): CatsId[Option[Copy]] =
     store.get(id)
 
   private var store: Map[Id[Copy], Copy] =
