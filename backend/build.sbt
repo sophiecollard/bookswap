@@ -3,23 +3,33 @@ name := "BookSwap"
 scalaVersion := "2.13.3"
 
 libraryDependencies ++= {
-  val catsVersion = "2.2.0"
-  val circeVersion = "0.12.3"
-  val doobieVersion = "0.9.0"
+  val cats = Seq(
+    "org.typelevel" %% "cats-core",
+    "org.typelevel" %% "cats-effect"
+  ).map(_ % "2.2.0")
 
-  Seq(
+  val circe = Seq(
+    "io.circe" %% "circe-core",
+    "io.circe" %% "circe-parser"
+  ).map(_ % "0.12.3")
+
+  val doobie = Seq(
+    "org.tpolecat" %% "doobie-core"     ,
+    "org.tpolecat" %% "doobie-hikari"   ,
+    "org.tpolecat" %% "doobie-postgres" ,
+    "org.tpolecat" %% "doobie-scalatest"
+  ).map(_ % "0.9.0")
+
+  val enumeratum = Seq(
     "com.beachape"  %% "enumeratum"        % "1.6.1",
     "com.beachape"  %% "enumeratum-doobie" % "1.6.0",
-    "io.circe"      %% "circe-core"        % circeVersion,
-    "io.circe"      %% "circe-parser"      % circeVersion,
-    "org.tpolecat"  %% "doobie-core"       % doobieVersion,
-    "org.tpolecat"  %% "doobie-hikari"     % doobieVersion,
-    "org.tpolecat"  %% "doobie-postgres"   % doobieVersion,
-    "org.tpolecat"  %% "doobie-scalatest"  % doobieVersion,
-    "org.typelevel" %% "cats-core"         % catsVersion,
-    "org.typelevel" %% "cats-effect"       % catsVersion,
-    "org.scalatest" %% "scalatest"         % "3.2.0" % Test
   )
+
+  val scalatest = Seq(
+    "org.scalatest" %% "scalatest" % "3.2.0" % Test
+  )
+
+  cats ++ circe ++ doobie ++ enumeratum ++ scalatest
 }
 
 scalacOptions ++= Seq(
