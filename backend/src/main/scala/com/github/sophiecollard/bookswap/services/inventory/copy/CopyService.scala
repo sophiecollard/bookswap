@@ -51,7 +51,7 @@ object CopyService {
     override def get(id: Id[Copy]): F[ServiceErrorOr[Copy]] =
       copyRepository
         .get(id)
-        .map(_.toRight[ServiceError](ResourceNotFound("Copy", id)))
+        .orElse[ServiceError](ResourceNotFound("Copy", id))
         .transact(transactor)
 
     override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]] =
@@ -68,7 +68,7 @@ object CopyService {
         copyRepository
           .create(copy)
           .ifTrue(copy)
-          .elseIfFalse[ServiceError](FailedToCreateResource("Copy", copy.id))
+          .orElse[ServiceError](FailedToCreateResource("Copy", copy.id))
           .transact(transactor)
       }
 
@@ -77,7 +77,7 @@ object CopyService {
         copyRepository
           .updateCondition(id, condition)
           .ifTrue(condition)
-          .elseIfFalse[ServiceError](FailedToUpdateResource("Copy", id))
+          .orElse[ServiceError](FailedToUpdateResource("Copy", id))
           .transact(transactor)
       }
 
@@ -108,7 +108,7 @@ object CopyService {
               copyRequestRepository.updateAcceptedRequestsStatuses(copyId, openRequestsStatus) >>
               copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
               copyRepository.updateStatus(copyId, Withdrawn) ifTrue
-              copyStatus elseIfFalse[ServiceError]
+              copyStatus orElse[ServiceError]
               FailedToUpdateResource("Copy", copyId)
           case NoUpdate =>
             initialState.copyStatus.asRight[ServiceError].pure[G]

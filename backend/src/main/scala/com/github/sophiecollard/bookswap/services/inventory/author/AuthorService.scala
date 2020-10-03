@@ -1,7 +1,6 @@
 package com.github.sophiecollard.bookswap.services.inventory.author
 
 import cats.{Functor, ~>}
-import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.User
@@ -37,7 +36,7 @@ object AuthorService {
       override def get(id: Id[Author]): F[ServiceErrorOr[Author]] =
         repository
           .get(id)
-          .map(_.toRight[ServiceError](ResourceNotFound("Author", id)))
+          .orElse[ServiceError](ResourceNotFound("Author", id))
           .transact(transactor)
 
       override def create(name: Name[Author])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Author]]] =
@@ -47,7 +46,7 @@ object AuthorService {
           repository
             .create(author)
             .ifTrue(author)
-            .elseIfFalse[ServiceError](FailedToCreateResource("Author", author.id))
+            .orElse[ServiceError](FailedToCreateResource("Author", author.id))
             .transact(transactor)
         }
 
@@ -56,7 +55,7 @@ object AuthorService {
           repository
             .delete(id)
             .ifTrue(())
-            .elseIfFalse[ServiceError](FailedToDeleteResource("Author", id))
+            .orElse[ServiceError](FailedToDeleteResource("Author", id))
             .transact(transactor)
         }
     }

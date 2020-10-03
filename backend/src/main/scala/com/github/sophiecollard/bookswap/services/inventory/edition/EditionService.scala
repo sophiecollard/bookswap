@@ -1,7 +1,6 @@
 package com.github.sophiecollard.bookswap.services.inventory.edition
 
 import cats.{Functor, ~>}
-import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
@@ -39,7 +38,7 @@ object EditionService {
     override def get(isbn: ISBN): F[ServiceErrorOr[Edition]] =
       repository
         .get(isbn)
-        .map(_.toRight[ServiceError](EditionNotFound(isbn)))
+        .orElse[ServiceError](EditionNotFound(isbn))
         .transact(transactor)
 
     override def create(edition: Edition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]] =
@@ -47,7 +46,7 @@ object EditionService {
         repository
           .create(edition)
           .ifTrue(edition)
-          .elseIfFalse[ServiceError](FailedToCreateEdition(edition.isbn))
+          .orElse[ServiceError](FailedToCreateEdition(edition.isbn))
           .transact(transactor)
       }
 
@@ -56,7 +55,7 @@ object EditionService {
         repository
           .update(isbn, details)
           .ifTrue(Edition(isbn, details.title, details.authorIds, details.publisherId, details.publicationDate))
-          .elseIfFalse[ServiceError](FailedToUpdateEdition(isbn))
+          .orElse[ServiceError](FailedToUpdateEdition(isbn))
           .transact(transactor)
       }
 
@@ -66,7 +65,7 @@ object EditionService {
         repository
           .delete(isbn)
           .ifTrue(())
-          .elseIfFalse[ServiceError](FailedToDeleteEdition(isbn))
+          .orElse[ServiceError](FailedToDeleteEdition(isbn))
           .transact(transactor)
       }
   }

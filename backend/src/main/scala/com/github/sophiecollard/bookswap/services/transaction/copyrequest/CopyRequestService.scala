@@ -64,7 +64,7 @@ object CopyRequestService {
       override def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]] =
         copyRequestRepository
           .get(id)
-          .map(_.toRight[ServiceError](ResourceNotFound("CopyRequest", id)))
+          .orElse[ServiceError](ResourceNotFound("CopyRequest", id))
           .transact(transactor)
 
       override def create(copyId: Id[Copy])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[CopyRequest]]] =
@@ -80,7 +80,7 @@ object CopyRequestService {
           copyRequestRepository
             .create(copyRequest)
             .ifTrue(copyRequest)
-            .elseIfFalse[ServiceError](FailedToCreateResource("CopyRequest", copyRequest.id))
+            .orElse[ServiceError](FailedToCreateResource("CopyRequest", copyRequest.id))
             .transact(transactor)
         }
 
@@ -164,7 +164,7 @@ object CopyRequestService {
         }
 
         maybeStatuses
-          .elseIfFalse[ServiceError](FailedToUpdateResource("CopyRequest", requestId))
+          .orElse[ServiceError](FailedToUpdateResource("CopyRequest", requestId))
           .transact(transactor)
       }
     }

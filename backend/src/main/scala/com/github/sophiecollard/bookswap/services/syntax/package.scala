@@ -19,9 +19,9 @@ package object syntax {
   }
 
   implicit class FOptOps[F[_], A](private val value: F[Option[A]]) {
-    def elseIfFalse[E](ifFalse: => E)(implicit ev: Functor[F]): F[Either[E, A]] =
+    def orElse[E](ifEmpty: => E)(implicit ev: Functor[F]): F[Either[E, A]] =
       value.map {
-        case None    => Left(ifFalse)
+        case None    => Left(ifEmpty)
         case Some(a) => Right(a)
       }
   }
