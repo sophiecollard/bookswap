@@ -6,9 +6,9 @@
 CREATE TYPE user_status AS ENUM (
   'pending_verification',
   'active',
+  'admin',
   'banned',
-  'deleted',
-  'admin'
+  'deleted'
 );
 
 CREATE TABLE users (
@@ -46,8 +46,10 @@ CREATE TYPE copy_status AS ENUM (
 
 CREATE TABLE copies (
   id         TEXT           PRIMARY KEY,
-  isbn       TEXT           REFERENCES editions (isbn),
-  offered_by TEXT           REFERENCES users (id),
+  isbn       TEXT           NOT NULL
+                            REFERENCES editions (isbn),
+  offered_by TEXT           NOT NULL
+                            REFERENCES users (id),
   offered_on TIMESTAMP      NOT NULL,
   condition  copy_condition NOT NULL,
   status     copy_status    NOT NULL
@@ -64,8 +66,10 @@ CREATE TYPE request_status AS ENUM (
 
 CREATE TABLE copy_requests (
   id               TEXT           PRIMARY KEY,
-  copy_id          TEXT           REFERENCES copies (id),
-  requested_by     TEXT           REFERENCES users (id),
+  copy_id          TEXT           NOT NULL
+                                  REFERENCES copies (id),
+  requested_by     TEXT           NOT NULL
+                                  REFERENCES users (id),
   requested_on     TIMESTAMP      NOT NULL,
   status_name      request_status NOT NULL,
   status_timestamp TIMESTAMP
