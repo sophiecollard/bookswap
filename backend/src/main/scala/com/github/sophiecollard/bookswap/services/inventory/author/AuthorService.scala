@@ -3,9 +3,9 @@ package com.github.sophiecollard.bookswap.services.inventory.author
 import cats.{Functor, ~>}
 import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToDeleteResource, ResourceNotFound}
+import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances._
@@ -14,8 +14,13 @@ import com.github.sophiecollard.bookswap.services.syntax._
 
 trait AuthorService[F[_]] {
 
+  /** Fetches an Author */
   def get(id: Id[Author]): F[ServiceErrorOr[Author]]
 
+  /** Invoked by a registered user to create an Author */
+  def create(name: Name[Author])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Author]]]
+
+  /** Invoked by an admin user to delete an Author */
   def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
 
 }
@@ -23,7 +28,8 @@ trait AuthorService[F[_]] {
 object AuthorService {
 
   def create[F[_], G[_]: Functor](
-    authorizationService: AuthorizationService[F, Id[User], ByAdminStatus],
+    authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
+    authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
     repository: AuthorRepository[G],
     transactor: G ~> F
   ): AuthorService[F] =
@@ -34,8 +40,19 @@ object AuthorService {
           .map(_.toRight[ServiceError](ResourceNotFound("Author", id)))
           .transact(transactor)
 
+      override def create(name: Name[Author])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Author]]] =
+        authorizationByActiveStatus.authorize(userId) {
+          val author = Author(id = Id.generate[Author], name)
+
+          repository
+            .create(author)
+            .ifTrue(author)
+            .elseIfFalse[ServiceError](FailedToCreateResource("Author", author.id))
+            .transact(transactor)
+        }
+
       override def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]] =
-        authorizationService.authorize(userId) {
+        authorizationByAdminStatus.authorize(userId) {
           repository
             .delete(id)
             .ifTrue(())
