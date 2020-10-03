@@ -37,9 +37,23 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'create' method" should {
-    "deny any request from a user that is not active" in new WithBasicSetup {
+    "deny any request from a user that is pending verification, banned or deleted" in new WithBasicSetup {
+      val (unverifiedUserId, bannedUserId, deletedUserId) = (Id.generate[User], Id.generate[User], Id.generate[User])
+
+      userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
+      userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
+      userRepository.create(User(id = deletedUserId, name = Name("DeletedUser"), status = UserStatus.Deleted))
+
+      withFailedAuthorization(copyRequestService.create(copyId)(unverifiedUserId)) {
+        _ shouldBe NotAnActiveUser(unverifiedUserId)
+      }
+
       withFailedAuthorization(copyRequestService.create(copyId)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
+      }
+
+      withFailedAuthorization(copyRequestService.create(copyId)(deletedUserId)) {
+        _ shouldBe NotAnActiveUser(deletedUserId)
       }
     }
 
@@ -445,17 +459,12 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
         catsIdTransactor
       )
 
-    val (copyOwnerId, bannedUserId) = (Id.generate[User], Id.generate[User])
-    val (requestIssuerId, nextRequestIssuerId) = (Id.generate[User], Id.generate[User])
+    val (copyOwnerId, requestIssuerId, nextRequestIssuerId) = (Id.generate[User], Id.generate[User], Id.generate[User])
     val (copyId, requestId, nextRequestId) = (Id.generate[Copy], Id.generate[CopyRequest], Id.generate[CopyRequest])
     val initialCopyStatus = CopyStatus.available
     val (initialRequestStatus, initialNextRequestStatus) = (RequestStatus.pending, RequestStatus.pending)
 
-    private val bannedUser = User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned)
-    private val requestIssuer = User(id = requestIssuerId, name = Name("RequestIssuer"), status = UserStatus.Active)
-
-    userRepository.create(bannedUser)
-    userRepository.create(requestIssuer)
+    userRepository.create(User(id = requestIssuerId, name = Name("RequestIssuer"), status = UserStatus.Active))
 
     private val copy = Copy(
       id = copyId,

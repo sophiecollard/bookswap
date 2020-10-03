@@ -37,9 +37,23 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'create' method" should {
-    "deny any request from a user that is not active" in new WithBasicSetup {
+    "deny any request from a user that is pending verification, banned or deleted" in new WithBasicSetup {
+      val (unverifiedUserId, bannedUserId, deletedUserId) = (Id.generate[User], Id.generate[User], Id.generate[User])
+
+      userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
+      userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
+      userRepository.create(User(id = deletedUserId, name = Name("DeletedUser"), status = UserStatus.Deleted))
+
+      withFailedAuthorization(copyService.create(copy.isbn, copy.condition)(unverifiedUserId)) {
+        _ shouldBe NotAnActiveUser(unverifiedUserId)
+      }
+
       withFailedAuthorization(copyService.create(copy.isbn, copy.condition)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
+      }
+
+      withFailedAuthorization(copyService.create(copy.isbn, copy.condition)(deletedUserId)) {
+        _ shouldBe NotAnActiveUser(deletedUserId)
       }
     }
 
@@ -153,15 +167,11 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
         catsIdTransactor
       )
 
-    val (copyOwnerId, requestIssuerId, bannedUserId) = (Id.generate[User], Id.generate[User], Id.generate[User])
+    val (copyOwnerId, requestIssuerId) = (Id.generate[User], Id.generate[User])
     val (copyId, requestId) = (Id.generate[Copy], Id.generate[CopyRequest])
     val (initialCopyStatus, initialRequestStatus) = (CopyStatus.available, RequestStatus.pending)
 
-    val copyOwner = User(id = copyOwnerId, name = Name("CopyOwner"), status = UserStatus.Active)
-    val bannedUser = User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned)
-
-    userRepository.create(copyOwner)
-    userRepository.create(bannedUser)
+    userRepository.create(User(id = copyOwnerId, name = Name("CopyOwner"), status = UserStatus.Active))
 
     val copy = Copy(
       id = copyId,
