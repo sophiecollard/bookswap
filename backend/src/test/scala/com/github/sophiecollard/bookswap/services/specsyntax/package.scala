@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.services
 
-import com.github.sophiecollard.bookswap.error.Error.{AuthorizationError, ServiceErrorOr}
+import com.github.sophiecollard.bookswap.error.Error.{AuthorizationError, ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.services.authorization.WithAuthorization
 import org.scalatest.Assertion
 
@@ -24,6 +24,15 @@ package object specsyntax {
     ifSuccessful(authorizationResult.unsafeResult)
   }
 
+  def withServiceError[R](
+    ifError: ServiceError => Assertion
+  )(
+    serviceErrorOr: ServiceErrorOr[R]
+  ): Assertion = {
+    assert(serviceErrorOr.isLeft)
+    ifError(serviceErrorOr.swap.toOption.get)
+  }
+
   def withNoServiceError[R](
     ifNoError: R => Assertion
   )(
@@ -33,13 +42,14 @@ package object specsyntax {
     ifNoError(serviceErrorOr.toOption.get)
   }
 
-  def withSome[A](
-    maybeA: Option[A]
-  )(
-    ifSome: A => Assertion
-  ): Assertion = {
+  def withSome[A](maybeA: Option[A])(ifSome: A => Assertion): Assertion = {
     assert(maybeA.isDefined)
     ifSome(maybeA.get)
+  }
+
+  def withNone[A](maybeA: Option[A])(ifNone: => Assertion): Assertion = {
+    assert(maybeA.isEmpty)
+    ifNone
   }
 
   def withLeft[E, A](
