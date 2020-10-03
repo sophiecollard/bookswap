@@ -1,5 +1,149 @@
 # BookSwap backend
 
+## REST API
+
+##### Get Copy
+
+_Method and endpoint_
+
+```
+GET /v1/copies/{copy_id}
+```
+
+_Sample response body_
+
+```json
+{
+  "id": "159c1470-0578-11eb-adc1-0242ac120002",
+  "isbn": "9781784875435",
+  "offered_by": "247e681c-0578-11eb-adc1-0242ac120002",
+  "offered_on": "2019-07-13T13:00:00Z",
+  "condition": "brand_new",
+  "status": "available"
+}
+```
+
+The `condition` field may take on one of the following values: `brand_new`, `good`, `some_signs_of_user`, `poor`.
+
+The `status` field may take on one of the following values: `available`, `reserved`, `swapped`, `withdrawn`.
+
+##### Create a Copy
+
+_Method and endpoint_
+
+```
+POST /v1/copies
+```
+
+_Request body_
+
+```json
+{
+  "isbn": "{isbn}",
+  "condition": "{brand_new|good|some_signs_of_use|poor}"
+}
+```
+
+##### Update a Copy
+
+_Method and endpoint_
+
+```
+PUT /v1/copies/{copy_id}
+```
+
+_Request body_
+
+```json
+{
+  "condition": "{brand_new|good|some_signs_of_use|poor}"
+}
+```
+
+##### Withdraw a Copy
+
+_Method and endpoint_
+
+```
+DELETE /v1/copies/{copy_id}
+```
+
+_Request body_
+
+None
+
+##### Get a CopyRequest
+
+_Method and endpoint_
+
+```
+GET /v1/requests/{request_id}
+```
+
+_Sample response body_
+
+```json
+{
+  "id": "034da7c2-0576-11eb-adc1-0242ac120002",
+  "copy_id": "0f5963e4-0576-11eb-adc1-0242ac120002",
+  "requested_by": "1571ec56-0576-11eb-adc1-0242ac120002",
+  "requested_on": "2019-07-13T13:00:00Z",
+  "status": {
+    "code": "accepted",
+    "timestamp": "2019-09-26T17:00:00Z"
+  }
+}
+```
+
+The `status.code` field may take on one of the following values: `pending`, `accepted`, `on_waiting_list`, `rejected`,
+`fulfilled`, `cancelled`.
+
+The `status.timestamp` field is optional and will be null for status code `pending`.
+
+##### Create a CopyRequest
+
+_Method and endpoint_
+
+```
+POST /v1/requests
+```
+
+_Request body_
+
+```json
+{
+  "copy_id": "{copy_id}"
+}
+```
+
+##### Cancel a CopyRequest
+
+_Method and endpoint_
+
+```
+DELETE /v1/requests/{request_id}
+```
+
+_Request body_
+
+None
+
+##### Accept, reject or fulfill a CopyRequest
+
+_Method and endpoint_
+
+```
+PATCH /v1/requests/{request_id}
+```
+
+_Request body_
+
+```json
+{
+  "command": "{accept|reject|mark_as_fulfilled}"
+}
+```
+
 ## Database schema
 
 ```sql
