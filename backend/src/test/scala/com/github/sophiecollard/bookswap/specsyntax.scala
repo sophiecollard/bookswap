@@ -1,10 +1,10 @@
-package com.github.sophiecollard.bookswap.services
+package com.github.sophiecollard.bookswap
 
 import com.github.sophiecollard.bookswap.authorization.WithAuthorization
 import com.github.sophiecollard.bookswap.error.{AuthorizationError, ServiceError, ServiceErrorOr}
 import org.scalatest.Assertion
 
-package object specsyntax {
+object specsyntax {
 
   def withFailedAuthorization[R, Tag](
     authorizationResult: WithAuthorization[R, Tag]

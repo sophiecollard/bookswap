@@ -13,7 +13,7 @@ import com.github.sophiecollard.bookswap.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.specsyntax._
+import com.github.sophiecollard.bookswap.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

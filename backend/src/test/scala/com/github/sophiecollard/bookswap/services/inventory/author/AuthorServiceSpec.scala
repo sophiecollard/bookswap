@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUs
 import com.github.sophiecollard.bookswap.error.ServiceError.{FailedToDeleteResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestAuthorRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.specsyntax._
+import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
