@@ -7,8 +7,8 @@ import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, Copy
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotAnActiveUser, NotTheCopyOwner}
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.ResourceNotFound
+import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUser, NotTheCopyOwner}
+import com.github.sophiecollard.bookswap.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository

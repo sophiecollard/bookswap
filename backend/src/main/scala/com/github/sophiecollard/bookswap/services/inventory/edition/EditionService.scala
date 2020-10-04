@@ -4,8 +4,8 @@ import cats.{Functor, ~>}
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.ServiceError._
-import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
+import com.github.sophiecollard.bookswap.error.ServiceError._
+import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.EditionRepository
 import com.github.sophiecollard.bookswap.services.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.services.authorization.Instances._

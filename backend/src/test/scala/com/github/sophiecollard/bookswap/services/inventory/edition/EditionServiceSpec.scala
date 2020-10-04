@@ -7,8 +7,8 @@ import cats.{~>, Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.{Author, Edition, EditionDetails, ISBN, Publisher, Title}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.{EditionNotFound, FailedToCreateEdition, FailedToDeleteEdition, FailedToUpdateEdition}
+import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
+import com.github.sophiecollard.bookswap.error.ServiceError.{EditionNotFound, FailedToCreateEdition, FailedToDeleteEdition, FailedToUpdateEdition}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestEditionRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances

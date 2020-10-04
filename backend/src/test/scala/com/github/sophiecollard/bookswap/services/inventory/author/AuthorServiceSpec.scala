@@ -6,8 +6,8 @@ import cats.{~>, Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToDeleteResource, ResourceNotFound}
+import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
+import com.github.sophiecollard.bookswap.error.ServiceError.{FailedToDeleteResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestAuthorRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances

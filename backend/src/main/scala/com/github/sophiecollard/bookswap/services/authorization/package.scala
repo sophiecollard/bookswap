@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.services
 
 import cats.Monad
 import cats.implicits._
-import com.github.sophiecollard.bookswap.error.Error.{AuthorizationError, AuthorizationErrorOr}
+import com.github.sophiecollard.bookswap.error.{AuthorizationError, AuthorizationErrorOr}
 
 package object authorization {
 

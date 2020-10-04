@@ -5,7 +5,7 @@ import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.NotTheCopyOwner
+import com.github.sophiecollard.bookswap.error.AuthorizationError.NotTheCopyOwner
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.services.authorization.{AuthorizationService, WithAuthorization}
 

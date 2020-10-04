@@ -3,8 +3,8 @@ package com.github.sophiecollard.bookswap.services.user
 import cats.{Functor, ~>}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, ResourceNotFound}
-import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
+import com.github.sophiecollard.bookswap.error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, ResourceNotFound}
+import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
 import com.github.sophiecollard.bookswap.services.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.services.authorization.Instances.{BySelf, WithAuthorizationBySelf}

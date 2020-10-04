@@ -9,8 +9,8 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.Error.ServiceError.{FailedToCreateResource, FailedToUpdateResource, ResourceNotFound}
-import com.github.sophiecollard.bookswap.error.Error.{ServiceError, ServiceErrorOr}
+import com.github.sophiecollard.bookswap.error.ServiceError.{FailedToCreateResource, FailedToUpdateResource, ResourceNotFound}
+import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances.{ByActiveStatus, WithAuthorizationByActiveStatus}

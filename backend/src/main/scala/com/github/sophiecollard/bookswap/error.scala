@@ -1,17 +1,13 @@
-package com.github.sophiecollard.bookswap.error
+package com.github.sophiecollard.bookswap
 
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import com.github.sophiecollard.bookswap.domain.user.User
 
-sealed trait Error {
-  def message: String
-}
+object error {
 
-object Error {
-
-  sealed abstract class AuthorizationError(override val message: String) extends Error
+  sealed abstract class AuthorizationError(val message: String)
 
   type AuthorizationErrorOr[A] = Either[AuthorizationError, A]
 
@@ -49,7 +45,7 @@ object Error {
 
   }
 
-  sealed abstract class ServiceError(override val message: String) extends Error
+  sealed abstract class ServiceError(val message: String)
 
   type ServiceErrorOr[A] = Either[ServiceError, A]
 

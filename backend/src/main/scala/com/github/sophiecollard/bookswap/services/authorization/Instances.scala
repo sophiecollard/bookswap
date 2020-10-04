@@ -5,8 +5,8 @@ import cats.implicits._
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.domain.user.UserStatus.{Active, Admin}
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError
-import com.github.sophiecollard.bookswap.error.Error.AuthorizationError.{NotAnActiveUser, NotAnAdmin, NotTheSameUser}
+import com.github.sophiecollard.bookswap.error.AuthorizationError
+import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin, NotTheSameUser}
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
 
 object Instances {

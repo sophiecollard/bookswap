@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.services
 
-import com.github.sophiecollard.bookswap.error.Error.{AuthorizationError, ServiceError, ServiceErrorOr}
+import com.github.sophiecollard.bookswap.error.{AuthorizationError, ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.services.authorization.WithAuthorization
 import org.scalatest.Assertion
 
