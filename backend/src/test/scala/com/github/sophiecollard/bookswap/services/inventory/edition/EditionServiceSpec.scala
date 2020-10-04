@@ -4,6 +4,7 @@ import java.time.{LocalDate, ZoneId}
 
 import cats.data.NonEmptyList
 import cats.{~>, Id => CatsId}
+import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory.{Author, Edition, EditionDetails, ISBN, Publisher, Title}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
@@ -11,7 +12,6 @@ import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUs
 import com.github.sophiecollard.bookswap.error.ServiceError.{EditionNotFound, FailedToCreateEdition, FailedToDeleteEdition, FailedToUpdateEdition}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestEditionRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.authorization.Instances
 import com.github.sophiecollard.bookswap.services.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -149,8 +149,8 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
     val editionService: EditionService[CatsId] =
       EditionService.create(
-        authorizationByActiveStatus = Instances.byActiveStatus(userRepository),
-        authorizationByAdminStatus = Instances.byAdminStatus(userRepository),
+        authorizationByActiveStatus = instances.byActiveStatus(userRepository),
+        authorizationByAdminStatus = instances.byAdminStatus(userRepository),
         editionRepository,
         catsIdTransactor
       )

@@ -4,6 +4,8 @@ import java.time.ZoneId
 
 import cats.implicits._
 import cats.{Monad, ~>}
+import com.github.sophiecollard.bookswap.authorization._
+import com.github.sophiecollard.bookswap.authorization.instances.{ByActiveStatus, WithAuthorizationByActiveStatus}
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
@@ -13,8 +15,6 @@ import com.github.sophiecollard.bookswap.error.ServiceError.{FailedToCreateResou
 import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
-import com.github.sophiecollard.bookswap.services.authorization.Instances.{ByActiveStatus, WithAuthorizationByActiveStatus}
-import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state._

@@ -1,14 +1,14 @@
 package com.github.sophiecollard.bookswap.services.inventory.author
 
 import cats.{Functor, ~>}
+import com.github.sophiecollard.bookswap.authorization._
+import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
-import com.github.sophiecollard.bookswap.services.authorization.Instances._
-import com.github.sophiecollard.bookswap.services.authorization._
 import com.github.sophiecollard.bookswap.syntax._
 
 trait AuthorService[F[_]] {

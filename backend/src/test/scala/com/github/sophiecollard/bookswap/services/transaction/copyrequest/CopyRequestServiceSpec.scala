@@ -3,6 +3,7 @@ package com.github.sophiecollard.bookswap.services.transaction.copyrequest
 import java.time.{LocalDateTime, ZoneId}
 
 import cats.{~>, Id => CatsId}
+import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
@@ -12,7 +13,6 @@ import com.github.sophiecollard.bookswap.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.authorization.Instances
 import com.github.sophiecollard.bookswap.services.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
@@ -451,7 +451,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     val copyRequestService: CopyRequestService[CatsId] =
       CopyRequestService.create(
-        authorizationByActiveStatus = Instances.byActiveStatus(userRepository),
+        authorizationByActiveStatus = instances.byActiveStatus(userRepository),
         authorizationByRequestIssuer = Authorization.byRequestIssuer(copyRequestRepository),
         authorizationByCopyOwner = Authorization.byCopyOwner(copyRequestRepository, copyRepository),
         copyRequestRepository,

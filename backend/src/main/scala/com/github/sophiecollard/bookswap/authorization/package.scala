@@ -1,7 +1,7 @@
-package com.github.sophiecollard.bookswap.services
+package com.github.sophiecollard.bookswap
 
-import cats.Monad
 import cats.implicits._
+import cats.Monad
 import com.github.sophiecollard.bookswap.error.{AuthorizationError, AuthorizationErrorOr}
 
 package object authorization {
@@ -25,16 +25,16 @@ package object authorization {
 
     final def toEither: Either[AuthorizationError, R] = this match {
       case Success(result) => Right(result)
-      case Failure(error)  => Left(error)
+      case Failure(error) => Left(error)
     }
 
     final def unsafeResult: R = this match {
       case Success(result) => result
-      case Failure(_)      => throw new RuntimeException("Authorization was a Failure")
+      case Failure(_) => throw new RuntimeException("Authorization was a Failure")
     }
 
     final def unsafeError: AuthorizationError = this match {
-      case Success(_)     => throw new RuntimeException("Authorization was a Success")
+      case Success(_) => throw new RuntimeException("Authorization was a Success")
       case Failure(error) => error
     }
   }
@@ -62,7 +62,7 @@ package object authorization {
         override def authorize[R](input: Input)(ifAuthorized: => F[R]): F[WithAuthorization[R, Tag]] =
           checkAuthorization(input).flatMap {
             case Right(_) => ifAuthorized.map(new Success[R, Tag](_) {})
-            case Left(e)  => WithAuthorization.failure[R, Tag](e).pure[F]
+            case Left(e) => WithAuthorization.failure[R, Tag](e).pure[F]
           }
       }
   }
