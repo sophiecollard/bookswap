@@ -4,14 +4,14 @@ import java.time.{LocalDate, ZoneId}
 
 import cats.data.NonEmptyList
 import cats.{~>, Id => CatsId}
+import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
 import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory._
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
-import com.github.sophiecollard.bookswap.error.ServiceError.{EditionNotFound, FailedToCreateEdition, FailedToDeleteEdition, FailedToUpdateEdition}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestEditionRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
+import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionNotFound, FailedToCreateEdition, FailedToDeleteEdition, FailedToUpdateEdition}
 import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

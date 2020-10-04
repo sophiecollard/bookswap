@@ -1,7 +1,8 @@
 package com.github.sophiecollard.bookswap
 
 import com.github.sophiecollard.bookswap.authorization.WithAuthorization
-import com.github.sophiecollard.bookswap.error.{AuthorizationError, ServiceError, ServiceErrorOr}
+import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError
+import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import org.scalatest.Assertion
 
 object specsyntax {

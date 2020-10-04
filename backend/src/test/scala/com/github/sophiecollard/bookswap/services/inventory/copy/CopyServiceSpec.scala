@@ -3,16 +3,16 @@ package com.github.sophiecollard.bookswap.services.inventory.copy
 import java.time.{LocalDateTime, ZoneId}
 
 import cats.{~>, Id => CatsId}
+import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.{NotAnActiveUser, NotTheCopyOwner}
 import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.error.AuthorizationError.{NotAnActiveUser, NotTheCopyOwner}
-import com.github.sophiecollard.bookswap.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
+import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
@@ -87,8 +87,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
       val condition = Condition.SomeSignsOfUse
 
       withSuccessfulAuthorization(copyService.updateCondition(copyId, condition)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe condition
+        withNoServiceError { returnedCopy =>
+          returnedCopy.condition shouldBe condition
         }
       }
 
@@ -105,8 +105,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "withdraw an available copy and reject all pending requests" in new WithCopyAvailable {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe CopyStatus.withdrawn
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe CopyStatus.withdrawn
         }
       }
 
@@ -116,8 +116,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "withdraw a reserved copy and reject all open requests" in new WithCopyReserved {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe CopyStatus.withdrawn
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe CopyStatus.withdrawn
         }
       }
 
@@ -127,8 +127,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a swapped copy" in new WithCopySwapped {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe initialCopyStatus
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe initialCopyStatus
         }
       }
 
@@ -137,8 +137,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a withdrawn copy" in new WithCopyWithdrawn {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe initialCopyStatus
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe initialCopyStatus
         }
       }
 
