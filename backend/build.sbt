@@ -21,8 +21,9 @@ libraryDependencies ++= {
   ).map(_ % "0.9.0")
 
   val enumeratum = Seq(
-    "com.beachape"  %% "enumeratum"        % "1.6.1",
-    "com.beachape"  %% "enumeratum-doobie" % "1.6.0"
+    "com.beachape" %% "enumeratum"        % "1.6.1",
+    "com.beachape" %% "enumeratum-circe"  % "1.6.1",
+    "com.beachape" %% "enumeratum-doobie" % "1.6.0"
   )
 
   val http4s = Seq(
