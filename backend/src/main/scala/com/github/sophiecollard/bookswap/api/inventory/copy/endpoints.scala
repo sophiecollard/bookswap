@@ -5,15 +5,15 @@ import java.util.UUID
 import cats.effect.Sync
 import cats.implicits._
 import com.github.sophiecollard.bookswap.api.syntax._
+import com.github.sophiecollard.bookswap.domain
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.inventory.copy.CopyService
-import com.github.sophiecollard.bookswap.{authorization, domain}
+import org.http4s.HttpRoutes
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.dsl.Http4sDsl
-import org.http4s.{HttpRoutes, Response}
 
 import scala.util.Try
 
@@ -35,50 +35,37 @@ object endpoints {
         req.as[CreateCopyRequestBody].flatMap { requestBody =>
           val (isbn, condition) = requestBody.convertTo[(domain.inventory.ISBN, domain.inventory.Condition)]
           service.create(isbn, condition)(userId).flatMap {
-            case authorization.Success(result) =>
-              result match {
-                case Right(copy) =>
-                  Ok(copy.convertTo[CopyResponseBody])
-                case Left(_) =>
-                  Response[F](NotFound).pure[F] // TODO include details
+            withSuccessfulAuthorization {
+              withNoServiceError { copy =>
+                Ok(copy.convertTo[CopyResponseBody])
               }
-            case authorization.Failure(_) =>
-              Response[F](Unauthorized).pure[F] // TODO include details
+            }
           }
         }
       case GET -> Root / CopyIdVar(copyId) =>
         service.get(copyId).flatMap {
-          case Right(copy) =>
+          withNoServiceError { copy =>
             Ok(copy.convertTo[CopyResponseBody])
-          case Left(_) =>
-            Response[F](NotFound).pure[F] // TODO include details
+          }
         }
       case req @ PUT -> Root / CopyIdVar(copyId) =>
         req.as[UpdateCopyRequestBody].flatMap { requestBody =>
           val condition = requestBody.convertTo[domain.inventory.Condition]
           service.updateCondition(copyId, condition)(userId).flatMap {
-            case authorization.Success(result) =>
-              result match {
-                case Right(copy) =>
-                  Ok(copy.convertTo[CopyResponseBody])
-                case Left(_) =>
-                  Response[F](NotFound).pure[F] // TODO include details
+            withSuccessfulAuthorization {
+              withNoServiceError { copy =>
+                Ok(copy.convertTo[CopyResponseBody])
               }
-            case authorization.Failure(_) =>
-              Response[F](Unauthorized).pure[F] // TODO include details
+            }
           }
         }
       case DELETE -> Root / CopyIdVar(copyId) =>
         service.withdraw(copyId)(userId).flatMap {
-          case authorization.Success(result) =>
-            result match {
-              case Right(copy) =>
-                Ok(copy.convertTo[CopyResponseBody])
-              case Left(_) =>
-                Response[F](NotFound).pure[F] // TODO include details
+          withSuccessfulAuthorization {
+            withNoServiceError { copy =>
+              Ok(copy.convertTo[CopyResponseBody])
             }
-          case authorization.Failure(_) =>
-            Response[F](Unauthorized).pure[F] // TODO return details
+          }
         }
     }
   }
