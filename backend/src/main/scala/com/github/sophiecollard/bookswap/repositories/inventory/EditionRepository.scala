@@ -1,7 +1,7 @@
 package com.github.sophiecollard.bookswap.repositories.inventory
 
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
-import com.github.sophiecollard.bookswap.implicits.All._
+import com.github.sophiecollard.bookswap.instances._
 import doobie.{ConnectionIO, Query0, Update0, Update}
 import doobie.implicits._
 import doobie.implicits.javatime._

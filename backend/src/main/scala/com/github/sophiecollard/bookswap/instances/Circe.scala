@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.implicits
+package com.github.sophiecollard.bookswap.instances
 
 import cats.data.NonEmptyList
 import io.circe.{Decoder, Encoder}

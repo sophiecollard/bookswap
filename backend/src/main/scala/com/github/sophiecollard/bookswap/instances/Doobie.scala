@@ -1,11 +1,11 @@
-package com.github.sophiecollard.bookswap.implicits
+package com.github.sophiecollard.bookswap.instances
 
 import cats.data.NonEmptyList
 import cats.implicits._
 import doobie.util.meta.Meta
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.parser.parse
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json}
 import org.postgresql.util.PGobject
 
 trait Doobie {
