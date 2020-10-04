@@ -10,10 +10,10 @@ import com.github.sophiecollard.bookswap.domain.inventory.CopyStatus.{Available,
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.ServiceError._
-import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
+import com.github.sophiecollard.bookswap.services.error.ServiceError._
+import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.services.inventory.copy.Authorization._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.{InitialState, StateMachine, StateUpdate}

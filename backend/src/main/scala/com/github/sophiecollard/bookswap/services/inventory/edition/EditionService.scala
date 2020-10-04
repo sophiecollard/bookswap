@@ -6,9 +6,9 @@ import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.ServiceError._
-import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.EditionRepository
+import com.github.sophiecollard.bookswap.services.error.ServiceError._
+import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
 
 trait EditionService[F[_]] {

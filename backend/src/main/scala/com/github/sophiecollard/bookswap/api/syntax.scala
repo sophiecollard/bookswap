@@ -3,7 +3,7 @@ package com.github.sophiecollard.bookswap.api
 import cats.Applicative
 import cats.implicits._
 import com.github.sophiecollard.bookswap.authorization
-import com.github.sophiecollard.bookswap.error.ServiceErrorOr
+import com.github.sophiecollard.bookswap.services.error.ServiceErrorOr
 import org.http4s.Response
 import org.http4s.dsl.io.{NotFound, Unauthorized}
 

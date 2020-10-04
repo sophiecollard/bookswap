@@ -2,11 +2,11 @@ package com.github.sophiecollard.bookswap.services.inventory.copy
 
 import cats.Monad
 import cats.implicits._
+import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.NotTheCopyOwner
 import com.github.sophiecollard.bookswap.authorization.{AuthorizationService, WithAuthorization}
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.error.AuthorizationError.NotTheCopyOwner
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
 object Authorization {
