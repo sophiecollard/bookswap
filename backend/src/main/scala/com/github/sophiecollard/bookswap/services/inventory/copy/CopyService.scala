@@ -28,10 +28,10 @@ trait CopyService[F[_]] {
   def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]]
 
   /** Invoked by the Copy owner to update its condition */
-  def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Condition]]]
+  def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]]
 
   /** Invoked by the Copy owner to withdraw that Copy */
-  def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]]
+  def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]]
 
 }
 
@@ -70,27 +70,37 @@ object CopyService {
           .transact(transactor)
       }
 
-    override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Condition]]] =
+    override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
       authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
-        copyRepository
-          .updateCondition(id, condition)
-          .ifTrue(condition)
-          .orElse[ServiceError](FailedToUpdateResource("Copy", id))
-          .transact(transactor)
+        val result = for {
+          copy <- copyRepository
+            .get(id)
+            .orElse[ServiceError](ResourceNotFound("Copy", id))
+            .asEitherT
+          updatedCopy <- copyRepository
+            .updateCondition(id, condition)
+            .ifTrue(copy.copy(condition = condition))
+            .orElse[ServiceError](FailedToUpdateResource("Copy", id))
+            .asEitherT
+        } yield updatedCopy
+
+        result.value.transact(transactor)
       }
 
-    override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[CopyStatus]]] =
+    override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
       authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
-        copyRepository
-          .get(id)
-          .transact(transactor)
-          .asEitherT[ServiceError](ResourceNotFound("Copy", id))
-          .flatMapF { copy =>
-            val initialState = InitialState(copy.status)
-            val stateUpdate = StateMachine.handleWithdrawCommand(initialState)
-            performStateUpdate(id, initialState)(stateUpdate)
-          }
-          .value
+        val result = for {
+          copy <- copyRepository
+            .get(id)
+            .orElse[ServiceError](ResourceNotFound("Copy", id))
+            .asEitherT
+          initialState = InitialState(copy.status)
+          stateUpdate = StateMachine.handleWithdrawCommand(initialState)
+          updatedStatus <- performStateUpdate(id, initialState)(stateUpdate).asEitherT
+          updatedCopy = copy.copy(status = updatedStatus)
+        } yield updatedCopy
+
+        result.value.transact(transactor)
       }
 
     private def performStateUpdate(
@@ -98,20 +108,18 @@ object CopyService {
       initialState: InitialState
     )(
       stateUpdate: StateUpdate
-    ): F[Either[ServiceError, CopyStatus]] =
-      (
-        stateUpdate match {
-          case UpdateCopyAndOpenRequestsStatuses(copyStatus, openRequestsStatus) =>
-            copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
-              copyRequestRepository.updateAcceptedRequestsStatuses(copyId, openRequestsStatus) >>
-              copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
-              copyRepository.updateStatus(copyId, Withdrawn) ifTrue
-              copyStatus orElse[ServiceError]
-              FailedToUpdateResource("Copy", copyId)
-          case NoUpdate =>
-            initialState.copyStatus.asRight[ServiceError].pure[G]
-        }
-      ).transact(transactor)
+    ): G[Either[ServiceError, CopyStatus]] =
+      stateUpdate match {
+        case UpdateCopyAndOpenRequestsStatuses(copyStatus, openRequestsStatus) =>
+          copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
+            copyRequestRepository.updateAcceptedRequestsStatuses(copyId, openRequestsStatus) >>
+            copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
+            copyRepository.updateStatus(copyId, Withdrawn) ifTrue
+            copyStatus orElse[ServiceError]
+            FailedToUpdateResource("Copy", copyId)
+        case NoUpdate =>
+          initialState.copyStatus.asRight[ServiceError].pure[G]
+      }
   }
 
 }

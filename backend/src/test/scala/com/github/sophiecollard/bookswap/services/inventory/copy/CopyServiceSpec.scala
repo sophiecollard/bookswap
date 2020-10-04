@@ -87,8 +87,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
       val condition = Condition.SomeSignsOfUse
 
       withSuccessfulAuthorization(copyService.updateCondition(copyId, condition)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe condition
+        withNoServiceError { returnedCopy =>
+          returnedCopy.condition shouldBe condition
         }
       }
 
@@ -105,8 +105,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "withdraw an available copy and reject all pending requests" in new WithCopyAvailable {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe CopyStatus.withdrawn
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe CopyStatus.withdrawn
         }
       }
 
@@ -116,8 +116,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "withdraw a reserved copy and reject all open requests" in new WithCopyReserved {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe CopyStatus.withdrawn
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe CopyStatus.withdrawn
         }
       }
 
@@ -127,8 +127,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a swapped copy" in new WithCopySwapped {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe initialCopyStatus
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe initialCopyStatus
         }
       }
 
@@ -137,8 +137,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a withdrawn copy" in new WithCopyWithdrawn {
       withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
-        withNoServiceError {
-          _ shouldBe initialCopyStatus
+        withNoServiceError { returnedCopy =>
+          returnedCopy.status shouldBe initialCopyStatus
         }
       }
 
