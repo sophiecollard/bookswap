@@ -17,9 +17,7 @@ import com.github.sophiecollard.bookswap.services.authorization.Instances.{ByAct
 import com.github.sophiecollard.bookswap.services.inventory.copy.Authorization._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.{InitialState, StateMachine, StateUpdate}
-import com.github.sophiecollard.bookswap.services.syntax._
-import com.github.sophiecollard.bookswap.syntax.EitherTSyntax._
-import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
+import com.github.sophiecollard.bookswap.syntax._
 
 trait CopyService[F[_]] {
 

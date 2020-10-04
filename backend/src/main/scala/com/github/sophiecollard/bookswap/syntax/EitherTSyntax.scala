@@ -3,7 +3,7 @@ package com.github.sophiecollard.bookswap.syntax
 import cats.Functor
 import cats.data.{EitherT, OptionT}
 
-object EitherTSyntax {
+trait EitherTSyntax {
 
   implicit class FEitherToEitherT[F[_], E, A](value: F[Either[E, A]]) {
     def asEitherT: EitherT[F, E, A] =
@@ -21,3 +21,5 @@ object EitherTSyntax {
   }
 
 }
+
+object EitherTSyntax extends EitherTSyntax

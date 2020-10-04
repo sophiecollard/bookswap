@@ -2,8 +2,8 @@ package com.github.sophiecollard.bookswap.services.transaction.copyrequest
 
 import java.time.ZoneId
 
-import cats.{Monad, ~>}
 import cats.implicits._
+import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
@@ -15,12 +15,10 @@ import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances.{ByActiveStatus, WithAuthorizationByActiveStatus}
 import com.github.sophiecollard.bookswap.services.authorization._
-import com.github.sophiecollard.bookswap.services.syntax._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state._
-import com.github.sophiecollard.bookswap.syntax.EitherTSyntax._
-import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
+import com.github.sophiecollard.bookswap.syntax._
 
 trait CopyRequestService[F[_]] {
 

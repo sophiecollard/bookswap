@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
 import com.github.sophiecollard.bookswap.services.authorization.Instances._
 import com.github.sophiecollard.bookswap.services.authorization._
-import com.github.sophiecollard.bookswap.services.syntax._
+import com.github.sophiecollard.bookswap.syntax._
 
 trait AuthorService[F[_]] {
 

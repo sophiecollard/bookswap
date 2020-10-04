@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
 import com.github.sophiecollard.bookswap.services.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.services.authorization.Instances.{BySelf, WithAuthorizationBySelf}
-import com.github.sophiecollard.bookswap.services.syntax._
+import com.github.sophiecollard.bookswap.syntax._
 
 trait UserService[F[_]] {
 

@@ -3,7 +3,7 @@ package com.github.sophiecollard.bookswap.syntax
 import cats.Functor
 import cats.data.OptionT
 
-object OptionTSyntax {
+trait OptionTSyntax {
 
   implicit class FOpToOptionT[F[_], A](value: F[Option[A]]) {
     def asOptionT: OptionT[F, A] =
@@ -16,3 +16,5 @@ object OptionTSyntax {
   }
 
 }
+
+object OptionTSyntax extends OptionTSyntax

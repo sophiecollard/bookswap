@@ -1,9 +1,9 @@
-package com.github.sophiecollard.bookswap.services
+package com.github.sophiecollard.bookswap.syntax
 
 import cats.{Functor, ~>}
 import cats.syntax.functor._
 
-package object syntax {
+trait FSyntax {
 
   implicit class Transactable[F[_], G[_], A](private val value: G[A]) {
     def transact(transactor: G ~> F): F[A] =
@@ -27,3 +27,5 @@ package object syntax {
   }
 
 }
+
+object FSyntax extends FSyntax
