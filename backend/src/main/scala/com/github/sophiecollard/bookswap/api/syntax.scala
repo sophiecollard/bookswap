@@ -4,8 +4,8 @@ import cats.Applicative
 import cats.implicits._
 import com.github.sophiecollard.bookswap.authorization
 import com.github.sophiecollard.bookswap.services.error.ServiceErrorOr
-import org.http4s.Response
-import org.http4s.dsl.io.{NotFound, Unauthorized}
+import org.http4s._
+import org.http4s.dsl.io.Unauthorized
 
 object syntax {
 
@@ -23,7 +23,6 @@ object syntax {
       case authorization.Success(result) =>
         ifSuccessful(result)
       case authorization.Failure(_) =>
-        // TODO Include details
         Response[F](Unauthorized).pure[F]
     }
 
@@ -35,9 +34,8 @@ object syntax {
     serviceErrorOr match {
       case Right(result) =>
         ifNoError(result)
-      case Left(_) =>
-        // TODO Handle different types of service errors
-        Response[F](NotFound).pure[F]
+      case Left(serviceError) =>
+        error.responseFromServiceError(serviceError)
     }
 
 }
