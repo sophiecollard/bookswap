@@ -157,7 +157,7 @@ CREATE TYPE user_status AS ENUM (
 
 CREATE TABLE users (
   id     TEXT        PRIMARY KEY,
-  name   TEXT        NOT NULL,
+  name   TEXT        UNIQUE NOT NULL,
   status user_status NOT NULL
 );
 
