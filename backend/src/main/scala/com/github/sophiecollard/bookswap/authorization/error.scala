@@ -3,7 +3,7 @@ package com.github.sophiecollard.bookswap.authorization
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
-import com.github.sophiecollard.bookswap.domain.user.User
+import com.github.sophiecollard.bookswap.domain.user.{Thread, User}
 
 object error {
 
@@ -16,6 +16,11 @@ object error {
     final case class NotTheSameUser(firstUserId: Id[User], secondUserId: Id[User])
       extends AuthorizationError(
         message = s"User [${firstUserId.value}] is not the same as User [${secondUserId.value}]."
+      )
+
+    final case class NotAThreadParticipant(userId: Id[User], threadId: Id[Thread])
+      extends AuthorizationError(
+        message = s"User [${userId.value}] is not a participant in thread [${threadId.value}]."
       )
 
     final case class NotAnActiveUser(userId: Id[User])

@@ -161,6 +161,30 @@ CREATE TABLE users (
   status user_status NOT NULL
 );
 
+CREATE TABLE threads (
+  id              TEXT      PRIMARY KEY,
+  from_user       TEXT      NOT NULL
+                            REFERENCES users (id)
+                            ON DELETE CASCADE,
+  to_user         TEXT      NOT NULL
+                            REFERENCES users (id)
+                            ON DELETE CASCADE,
+  last_message_on TIMESTAMP NOT NULL,
+  UNIQUE (from_user, to_user)
+);
+
+CREATE INDEX from_user_index ON threads (from_user);
+CREATE INDEX to_user_index ON threads (to_user);
+
+CREATE TABLE messages (
+  thread_id  TEXT      NOT NULL
+                       REFERENCES threads (id)
+                       ON DELETE CASCADE,
+  created_at TIMESTAMP NOT NULL,
+  contents   TEXT      NOT NULL,
+  PRIMARY KEY (thread_id, created_at)
+);
+
 CREATE TABLE authors (
   id   TEXT PRIMARY KEY,
   name TEXT NOT NULL
