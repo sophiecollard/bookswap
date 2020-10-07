@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestAuthorRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToDeleteResource, ResourceNotFound}
+import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -85,7 +85,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
     "return an error if the author is not found" in new WithAuthor {
       withSuccessfulAuthorization(authorService.delete(otherAuthorId)(adminUserId)) {
         withServiceError {
-          _ shouldBe FailedToDeleteResource("Author", otherAuthorId)
+          _ shouldBe ResourceNotFound("Author", otherAuthorId)
         }
       }
     }

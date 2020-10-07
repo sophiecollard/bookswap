@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.services.inventory.author
 
-import cats.{Functor, ~>}
+import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.authorization._
 import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
@@ -26,7 +26,7 @@ trait AuthorService[F[_]] {
 
 object AuthorService {
 
-  def create[F[_], G[_]: Functor](
+  def create[F[_], G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
     repository: AuthorRepository[G],
@@ -34,9 +34,7 @@ object AuthorService {
   ): AuthorService[F] =
     new AuthorService[F] {
       override def get(id: Id[Author]): F[ServiceErrorOr[Author]] =
-        repository
-          .get(id)
-          .orElse[ServiceError](ResourceNotFound("Author", id))
+        getWithoutTransaction(id)
           .transact(transactor)
 
       override def create(name: Name[Author])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Author]]] =
@@ -52,12 +50,22 @@ object AuthorService {
 
       override def delete(id: Id[Author])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]] =
         authorizationByAdminStatus.authorize(userId) {
-          repository
-            .delete(id)
-            .ifTrue(())
-            .orElse[ServiceError](FailedToDeleteResource("Author", id))
-            .transact(transactor)
+          val result = for {
+            _ <- getWithoutTransaction(id).asEitherT
+            _ <- repository
+              .delete(id)
+              .ifTrue(())
+              .orElse[ServiceError](FailedToDeleteResource("Author", id))
+              .asEitherT
+          } yield ()
+
+          result.value.transact(transactor)
         }
+
+      private def getWithoutTransaction(id: Id[Author]): G[ServiceErrorOr[Author]] =
+        repository
+          .get(id)
+          .orElse[ServiceError](ResourceNotFound("Author", id))
     }
 
 }
