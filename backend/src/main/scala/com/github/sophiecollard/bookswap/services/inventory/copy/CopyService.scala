@@ -47,9 +47,7 @@ object CopyService {
     implicit zoneId: ZoneId
   ): CopyService[F] = new CopyService[F] {
     override def get(id: Id[Copy]): F[ServiceErrorOr[Copy]] =
-      copyRepository
-        .get(id)
-        .orElse[ServiceError](ResourceNotFound("Copy", id))
+      getWithoutTransaction(id)
         .transact(transactor)
 
     override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]] =
@@ -73,10 +71,7 @@ object CopyService {
     override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
       authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
         val result = for {
-          copy <- copyRepository
-            .get(id)
-            .orElse[ServiceError](ResourceNotFound("Copy", id))
-            .asEitherT
+          copy <- getWithoutTransaction(id).asEitherT
           updatedCopy <- copyRepository
             .updateCondition(id, condition)
             .ifTrue(copy.copy(condition = condition))
@@ -90,10 +85,7 @@ object CopyService {
     override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
       authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
         val result = for {
-          copy <- copyRepository
-            .get(id)
-            .orElse[ServiceError](ResourceNotFound("Copy", id))
-            .asEitherT
+          copy <- getWithoutTransaction(id).asEitherT
           initialState = InitialState(copy.status)
           stateUpdate = StateMachine.handleWithdrawCommand(initialState)
           updatedStatus <- performStateUpdate(id, initialState)(stateUpdate).asEitherT
@@ -103,12 +95,17 @@ object CopyService {
         result.value.transact(transactor)
       }
 
+    private def getWithoutTransaction(id: Id[Copy]): G[ServiceErrorOr[Copy]] =
+      copyRepository
+        .get(id)
+        .orElse[ServiceError](ResourceNotFound("Copy", id))
+
     private def performStateUpdate(
       copyId: Id[Copy],
       initialState: InitialState
     )(
       stateUpdate: StateUpdate
-    ): G[Either[ServiceError, CopyStatus]] =
+    ): G[ServiceErrorOr[CopyStatus]] =
       stateUpdate match {
         case UpdateCopyAndOpenRequestsStatuses(copyStatus, openRequestsStatus) =>
           copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
