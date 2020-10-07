@@ -37,55 +37,66 @@ object error {
 
     final case class ResourceNotFound(message: String) extends ApiError(
       responseBody = ErrorResponseBody(
-        message = message,
-        help = "Please check that the resource identifier is correct.".some
+        code = Code("resource_not_found"),
+        message = Message(message),
+        help = Help("Please check that the resource identifier is correct.").some
       )
     )
 
     final case class ResourceAlreadyExists(message: String) extends ApiError(
       responseBody = ErrorResponseBody(
-        message = message,
-        help = "Please try updating the existing resource instead.".some
+        code = Code("resource_already_exists"),
+        message = Message(message)
       )
     )
 
     final case class FailedToCreateResource(resourceName: String) extends ApiError(
       responseBody = ErrorResponseBody(
-        message = s"Unexpected failure while creating $resourceName.",
-        help = "Please try one more time. If the error persists, this is probably a bug.".some
+        code = Code("failed_to_create_resource"),
+        message = Message(s"Unexpected failure while creating $resourceName."),
+        help = Help("Please try one more time. If the error persists, this is probably a bug.").some
       )
     )
 
     final case class FailedToUpdateResource(resourceName: String) extends ApiError(
       responseBody = ErrorResponseBody(
-        message = s"Unexpected failure while updating $resourceName.",
-        help = "Please try one more time. If the error persists, this is probably a bug.".some
+        code = Code("failed_to_update_resource"),
+        message = Message(s"Unexpected failure while updating $resourceName."),
+        help = Help("Please try one more time. If the error persists, this is probably a bug.").some
       )
     )
 
     final case class FailedToDeleteResource(resourceName: String) extends ApiError(
       responseBody = ErrorResponseBody(
-        message = s"Unexpected failure while deleting $resourceName.",
-        help = "Please try one more time. If the error persists, this is probably a bug.".some
+        code = Code("failed_to_delete_resource"),
+        message = Message(s"Unexpected failure while deleting $resourceName."),
+        help = Help("Please try one more time. If the error persists, this is probably a bug.").some
       )
     )
 
     case object UnexpectedError extends ApiError(
       responseBody = ErrorResponseBody(
-        message = "An unexpected server error occurred."
+        code = Code("unexpected_error"),
+        message = Message("An unexpected server error occurred.")
       )
     )
 
     def fromServiceError(serviceError: ServiceError): ApiError =
       serviceError match {
+        case ServiceError.InvalidState(_) =>
+          UnexpectedError
         case error @ ServiceError.ResourceNotFound(_, _) =>
           ResourceNotFound(error.message)
         case error @ ServiceError.EditionNotFound(_) =>
           ResourceNotFound(error.message)
+        case error @ ServiceError.UserNameAlreadyTaken(_) =>
+          ResourceAlreadyExists(error.message)
+        case error @ ServiceError.EditionAlreadyExists(_) =>
+          ResourceAlreadyExists(error.message)
         case ServiceError.FailedToCreateResource(resourceName, _) =>
           FailedToCreateResource(resourceName)
-        case ServiceError.FailedToCreateEdition(isbn) =>
-          ResourceAlreadyExists(s"An Edition with ISBN [${isbn.value}] already exists.")
+        case ServiceError.FailedToCreateEdition(_) =>
+          FailedToCreateResource("Edition")
         case ServiceError.FailedToUpdateResource(resourceName, _) =>
           FailedToUpdateResource(resourceName)
         case ServiceError.FailedToUpdateEdition(_) =>
@@ -94,22 +105,31 @@ object error {
           FailedToDeleteResource(resourceName)
         case ServiceError.FailedToDeleteEdition(_) =>
           FailedToDeleteResource("Edition")
-        case _ =>
-          UnexpectedError
       }
 
   }
 
-  final case class ErrorResponseBody(message: String, help: Option[String] = None)
+  final case class ErrorResponseBody(
+    code: Code,
+    message: Message,
+    help: Option[Help] = None
+  )
 
   object ErrorResponseBody {
     implicit val encoder: Encoder[ErrorResponseBody] =
       Encoder.instance { error =>
         Json.obj(
-          "error" := error.message.asJson,
-          "help" := error.help.asJson
+          "error" := error.code.value.asJson,
+          "message" := error.message.value.asJson,
+          "help" := error.help.map(_.value).asJson
         )
       }
   }
+
+  final case class Code(value: String) extends AnyVal
+
+  final case class Message(value: String) extends AnyVal
+
+  final case class Help(value: String) extends AnyVal
 
 }
