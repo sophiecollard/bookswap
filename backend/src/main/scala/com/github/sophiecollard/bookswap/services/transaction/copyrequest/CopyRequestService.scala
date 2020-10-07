@@ -15,7 +15,7 @@ import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToCreateResource, FailedToUpdateResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
-import com.github.sophiecollard.bookswap.services.transaction.copyrequest.Authorization._
+import com.github.sophiecollard.bookswap.services.transaction.copyrequest.authorization._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state._
 import com.github.sophiecollard.bookswap.syntax._
@@ -47,6 +47,8 @@ trait CopyRequestService[F[_]] {
 object CopyRequestService {
 
   type Statuses = (RequestStatus, CopyStatus)
+
+  type AuthorizationInput = (Id[User], Id[CopyRequest])
 
   def create[F[_]: Monad, G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
@@ -83,22 +85,22 @@ object CopyRequestService {
         }
 
       override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]] =
-        authorizationByRequestIssuer.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByRequestIssuer.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleCancelCommand)
         }
 
       override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
-        authorizationByCopyOwner.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByCopyOwner.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleAcceptCommand)
         }
 
       override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
-        authorizationByCopyOwner.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByCopyOwner.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleRejectCommand)
         }
 
       override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
-        authorizationByCopyOwner.authorize(AuthorizationInput(userId, requestId)) {
+        authorizationByCopyOwner.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleMarkAsFulfilledCommand)
         }
 
