@@ -1,7 +1,8 @@
 package com.github.sophiecollard.bookswap.services
 
 import com.github.sophiecollard.bookswap.domain.inventory.ISBN
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
+import com.github.sophiecollard.bookswap.domain.user.User
 
 object error {
 
@@ -22,6 +23,11 @@ object error {
     final case class EditionNotFound(isbn: ISBN)
       extends ServiceError(
         message = s"Edition [${isbn.value}] was not found."
+      )
+
+    final case class UserNameAlreadyTaken(name: Name[User])
+      extends ServiceError(
+        message = s"User name [$name] is already taken."
       )
 
     final case class EditionAlreadyExists(isbn: ISBN)

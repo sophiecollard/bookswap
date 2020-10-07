@@ -1,8 +1,8 @@
 package com.github.sophiecollard.bookswap.repositories.user
 
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.User
-import doobie.{ConnectionIO, Query0, Update0, Update}
+import doobie.{ConnectionIO, Query0, Update, Update0}
 import doobie.implicits._
 
 trait UserRepository[F[_]] {
@@ -12,6 +12,8 @@ trait UserRepository[F[_]] {
   def delete(id: Id[User]): F[Boolean]
 
   def get(id: Id[User]): F[Option[User]]
+
+  def getByName(name: Name[User]): F[Option[User]]
 
 }
 
@@ -30,6 +32,10 @@ object UserRepository {
 
     override def get(id: Id[User]): ConnectionIO[Option[User]] =
       getQuery(id)
+        .option
+
+    override def getByName(name: Name[User]): ConnectionIO[Option[User]] =
+      getByNameQuery(name)
         .option
   }
 
@@ -54,6 +60,13 @@ object UserRepository {
          |SELECT id, name, status
          |FROM users
          |WHERE id = $id
+       """.stripMargin.query[User]
+
+  def getByNameQuery(name: Name[User]): Query0[User] =
+    sql"""
+         |SELECT id, name, status
+         |FROM users
+         |WHERE name = $name
        """.stripMargin.query[User]
 
 }

@@ -1,7 +1,7 @@
 package com.github.sophiecollard.bookswap.fixtures.repositories.user
 
 import cats.{Id => CatsId}
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
 
@@ -28,6 +28,9 @@ class TestUserRepository extends UserRepository[CatsId] {
 
   override def get(id: Id[User]): CatsId[Option[User]] =
     store.get(id)
+
+  override def getByName(name: Name[User]): CatsId[Option[User]] =
+    store.values.find(_.name == name)
 
   private var store: Map[Id[User], User] =
     Map.empty
