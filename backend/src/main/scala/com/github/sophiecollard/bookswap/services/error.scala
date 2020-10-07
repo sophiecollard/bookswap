@@ -24,6 +24,11 @@ object error {
         message = s"Edition [${isbn.value}] was not found."
       )
 
+    final case class EditionAlreadyExists(isbn: ISBN)
+      extends ServiceError(
+        message = s"Edition [${isbn.value}] already exists."
+      )
+
     final case class FailedToCreateResource[A](resourceName: String, id: Id[A])
       extends ServiceError(
         message = s"$resourceName [${id.value}] could not be created."

@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestEditionRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionNotFound, FailedToCreateEdition, FailedToDeleteEdition, FailedToUpdateEdition}
+import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionAlreadyExists, EditionNotFound}
 import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -62,7 +62,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     "return an error if the isbn already exists" in new WithEdition {
       withSuccessfulAuthorization(editionService.create(edition)(activeUserId)) {
         withServiceError {
-          _ shouldBe FailedToCreateEdition(isbn)
+          _ shouldBe EditionAlreadyExists(isbn)
         }
       }
     }
@@ -104,7 +104,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     "return an error if the edition is not found" in new WithEdition {
       withSuccessfulAuthorization(editionService.update(otherIsbn, editionDetails)(activeUserId)) {
         withServiceError {
-          _ shouldBe FailedToUpdateEdition(otherIsbn)
+          _ shouldBe EditionNotFound(otherIsbn)
         }
       }
     }
@@ -130,7 +130,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     "return an error if the edition is not found" in new WithEdition {
       withSuccessfulAuthorization(editionService.delete(otherIsbn)(adminUserId)) {
         withServiceError {
-          _ shouldBe FailedToDeleteEdition(otherIsbn)
+          _ shouldBe EditionNotFound(otherIsbn)
         }
       }
     }

@@ -24,6 +24,12 @@ trait FSyntax {
         case None    => Left(ifEmpty)
         case Some(a) => Right(a)
       }
+
+    def emptyOrElse[E](ifDefined: => E)(implicit ev: Functor[F]): F[Either[E, Unit]] =
+      value.map {
+        case None    => Right(())
+        case Some(_) => Left(ifDefined)
+      }
   }
 
 }
