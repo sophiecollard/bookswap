@@ -14,7 +14,7 @@ import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
-import com.github.sophiecollard.bookswap.services.inventory.copy.Authorization._
+import com.github.sophiecollard.bookswap.services.inventory.copy.authorization._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.StateUpdate._
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.{InitialState, StateMachine, StateUpdate}
 import com.github.sophiecollard.bookswap.syntax._
@@ -39,7 +39,7 @@ object CopyService {
 
   def create[F[_]: Monad, G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
-    authorizationByCopyOwner: AuthorizationService[F, AuthorizationInput, ByCopyOwner],
+    authorizationByCopyOwner: AuthorizationService[F, (Id[User], Id[Copy]), ByCopyOwner],
     copyRepository: CopyRepository[G],
     copyRequestRepository: CopyRequestRepository[G],
     transactor: G ~> F
@@ -69,7 +69,7 @@ object CopyService {
       }
 
     override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
-      authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
+      authorizationByCopyOwner.authorize((userId, id)) {
         val result = for {
           copy <- getWithoutTransaction(id).asEitherT
           updatedCopy <- copyRepository
@@ -83,7 +83,7 @@ object CopyService {
       }
 
     override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
-      authorizationByCopyOwner.authorize(AuthorizationInput(userId, id)) {
+      authorizationByCopyOwner.authorize((userId, id)) {
         val result = for {
           copy <- getWithoutTransaction(id).asEitherT
           initialState = InitialState(copy.status)

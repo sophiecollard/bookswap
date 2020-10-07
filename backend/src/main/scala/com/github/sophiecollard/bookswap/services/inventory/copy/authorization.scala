@@ -9,18 +9,18 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
-object Authorization {
+object authorization {
 
   trait ByCopyOwner
 
   type WithAuthorizationByCopyOwner[R] = WithAuthorization[R, ByCopyOwner]
 
-  final case class AuthorizationInput(userId: Id[User], copyId: Id[Copy])
+  type Input = (Id[User], Id[Copy])
 
   def byCopyOwner[F[_]: Monad](
     copyRepository: CopyRepository[F]
-  ): AuthorizationService[F, AuthorizationInput, ByCopyOwner] =
-    AuthorizationService.create[F, AuthorizationInput, ByCopyOwner] { case AuthorizationInput(userId, copyId) =>
+  ): AuthorizationService[F, Input, ByCopyOwner] =
+    AuthorizationService.create { case (userId, copyId) =>
       copyRepository.get(copyId).map {
         case Some(copy) if copy.offeredBy == userId =>
           Right(())
