@@ -11,7 +11,6 @@ object UserStatus extends StringEnum[UserStatus] with StringDoobieEnum[UserStatu
   case object PendingVerification extends UserStatus("pending_verification")
   case object Active              extends UserStatus("active")
   case object Banned              extends UserStatus("banned")
-  case object Deleted             extends UserStatus("deleted")
   case object Admin               extends UserStatus("admin")
 
   val values: immutable.IndexedSeq[UserStatus] = findValues

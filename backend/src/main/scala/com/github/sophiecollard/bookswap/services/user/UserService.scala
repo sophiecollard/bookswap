@@ -2,11 +2,11 @@ package com.github.sophiecollard.bookswap.services.user
 
 import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.authorization.AuthorizationService
-import com.github.sophiecollard.bookswap.authorization.instances.{BySelf, WithAuthorizationBySelf}
+import com.github.sophiecollard.bookswap.authorization.instances.{ByAdminStatus, BySelf, WithAuthorizationByAdminStatus, WithAuthorizationBySelf}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
-import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, ResourceNotFound, UserNameAlreadyTaken}
+import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, FailedToUpdateResource, ResourceNotFound, UserNameAlreadyTaken}
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
 
@@ -18,6 +18,9 @@ trait UserService[F[_]] {
   /** Creates a new User */
   def create(name: Name[User]): F[ServiceErrorOr[User]]
 
+  /** Invoked by an Admin to update a User's status */
+  def updateStatus(id: Id[User], status: UserStatus)(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
+
   /** Invoked by a User to delete itself */
   def delete(id: Id[User])(userId: Id[User]): F[WithAuthorizationBySelf[ServiceErrorOr[Unit]]]
 
@@ -27,6 +30,7 @@ object UserService {
 
   def create[F[_], G[_]: Monad](
     authorizationBySelf: AuthorizationService[F, (Id[User], Id[User]), BySelf],
+    authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
     userRepository: UserRepository[G],
     transactor: G ~> F
   ): UserService[F] = new UserService[F] {
@@ -51,6 +55,20 @@ object UserService {
 
       result.value.transact(transactor)
     }
+
+    override def updateStatus(id: Id[User], status: UserStatus)(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]] =
+      authorizationByAdminStatus.authorize(userId) {
+        val result = for {
+          _ <- getWithoutTransaction(id).asEitherT
+          _ <- userRepository
+            .updateStatus(id, status)
+            .ifTrue(())
+            .orElse[ServiceError](FailedToUpdateResource("User", id))
+            .asEitherT
+        } yield ()
+
+        result.value.transact(transactor)
+      }
 
     override def delete(id: Id[User])(userId: Id[User]): F[WithAuthorizationBySelf[ServiceErrorOr[Unit]]] =
       authorizationBySelf.authorize((id, userId)) {

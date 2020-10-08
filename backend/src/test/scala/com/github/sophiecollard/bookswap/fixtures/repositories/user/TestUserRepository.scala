@@ -16,10 +16,19 @@ class TestUserRepository extends UserRepository[CatsId] {
         true
     }
 
-  override def delete(id: Id[User]): CatsId[Boolean] = {
+  override def updateStatus(id: Id[User], status: UserStatus): CatsId[Boolean] =
     store.get(id) match {
       case Some(user) =>
-        store += ((id, user.copy(status = UserStatus.Deleted)))
+        store += ((id, user.copy(status = status)))
+        true
+      case None =>
+        false
+    }
+
+  override def delete(id: Id[User]): CatsId[Boolean] = {
+    store.get(id) match {
+      case Some(_) =>
+        store -= id
         true
       case None =>
         false

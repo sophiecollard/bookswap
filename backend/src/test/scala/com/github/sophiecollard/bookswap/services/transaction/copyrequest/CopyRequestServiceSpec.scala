@@ -37,12 +37,11 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'create' method" should {
-    "deny any request from a user that is pending verification, banned or deleted" in new WithBasicSetup {
-      val (unverifiedUserId, bannedUserId, deletedUserId) = (Id.generate[User], Id.generate[User], Id.generate[User])
+    "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
+      val (unverifiedUserId, bannedUserId) = (Id.generate[User], Id.generate[User])
 
       userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
       userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
-      userRepository.create(User(id = deletedUserId, name = Name("DeletedUser"), status = UserStatus.Deleted))
 
       withFailedAuthorization(copyRequestService.create(copyId)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
@@ -50,10 +49,6 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
       withFailedAuthorization(copyRequestService.create(copyId)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
-      }
-
-      withFailedAuthorization(copyRequestService.create(copyId)(deletedUserId)) {
-        _ shouldBe NotAnActiveUser(deletedUserId)
       }
     }
 

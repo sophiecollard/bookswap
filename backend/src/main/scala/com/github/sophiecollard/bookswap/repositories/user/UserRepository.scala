@@ -1,13 +1,15 @@
 package com.github.sophiecollard.bookswap.repositories.user
 
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
-import com.github.sophiecollard.bookswap.domain.user.User
+import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import doobie.{ConnectionIO, Query0, Update, Update0}
 import doobie.implicits._
 
 trait UserRepository[F[_]] {
 
   def create(user: User): F[Boolean]
+
+  def updateStatus(id: Id[User], status: UserStatus): F[Boolean]
 
   def delete(id: Id[User]): F[Boolean]
 
@@ -23,6 +25,11 @@ object UserRepository {
     override def create(user: User): ConnectionIO[Boolean] =
       createUpdate
         .run(user)
+        .map(_ == 1)
+
+    override def updateStatus(id: Id[User], status: UserStatus): ConnectionIO[Boolean] =
+      updateStatusUpdate(id, status)
+        .run
         .map(_ == 1)
 
     override def delete(id: Id[User]): ConnectionIO[Boolean] =
@@ -48,10 +55,17 @@ object UserRepository {
          |""".stripMargin
     )
 
-  def deleteUpdate(id: Id[User]): Update0 =
+  def updateStatusUpdate(id: Id[User], status: UserStatus): Update0 =
     sql"""
          |UPDATE users
-         |SET status = 'deleted'
+         |SET status = $status
+         |WHERE id = $id
+       """.stripMargin.update
+
+  def deleteUpdate(id: Id[User]): Update0 =
+    sql"""
+         |DELETE
+         |FROM users
          |WHERE id = $id
        """.stripMargin.update
 

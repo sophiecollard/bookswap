@@ -33,17 +33,13 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'create' method" should {
-    "deny any request from a user that is pending verification, banned or deleted" in new WithBasicSetup {
+    "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
       withFailedAuthorization(editionService.create(edition)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
       withFailedAuthorization(editionService.create(edition)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
-      }
-
-      withFailedAuthorization(editionService.create(edition)(deletedUserId)) {
-        _ shouldBe NotAnActiveUser(deletedUserId)
       }
     }
 
@@ -69,17 +65,13 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'update' method" should {
-    "deny any request from a user that is pending verification, banned or deleted" in new WithBasicSetup {
+    "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
       withFailedAuthorization(editionService.update(isbn, editionDetails)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
       withFailedAuthorization(editionService.update(isbn, editionDetails)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
-      }
-
-      withFailedAuthorization(editionService.update(isbn, editionDetails)(deletedUserId)) {
-        _ shouldBe NotAnActiveUser(deletedUserId)
       }
     }
 
@@ -156,14 +148,13 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
       )
 
     val (activeUserId, adminUserId) = (Id.generate[User], Id.generate[User])
-    val (unverifiedUserId, bannedUserId, deletedUserId) = (Id.generate[User], Id.generate[User], Id.generate[User])
+    val (unverifiedUserId, bannedUserId) = (Id.generate[User], Id.generate[User])
     val (isbn, otherIsbn) = (ISBN.unvalidated("9781784875435"), ISBN.unvalidated("9780007232161"))
 
     userRepository.create(User(id = activeUserId, name = Name("ActiveUser"), status = UserStatus.Active))
     userRepository.create(User(id = adminUserId, name = Name("AdminUser"), status = UserStatus.Admin))
     userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
     userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
-    userRepository.create(User(id = deletedUserId, name = Name("DeletedUser"), status = UserStatus.Deleted))
 
     val edition = Edition(
       isbn,
