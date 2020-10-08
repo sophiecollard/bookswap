@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.repositories.inventory
 
-import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus}
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import doobie.implicits._
@@ -21,8 +21,11 @@ trait CopyRepository[F[_]] {
   /** Returns the specified Copy */
   def get(id: Id[Copy]): F[Option[Copy]]
 
-  /** Returns a list of Copies offred by the specified User */
-  def list(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]]
+  /** Returns a list of Copies available or reserved for the specified ISBN */
+  def listForEdition(isbn: ISBN, pagination: CopyPagination): F[List[Copy]]
+
+  /** Returns a list of Copies offered by the specified User */
+  def listForOwner(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]]
 
 }
 
@@ -48,8 +51,12 @@ object CopyRepository {
       getQuery(id)
         .option
 
-    override def list(offeredBy: Id[User], pagination: CopyPagination): ConnectionIO[List[Copy]] =
-      listQuery(offeredBy, pagination)
+    override def listForEdition(isbn: ISBN, pagination: CopyPagination): ConnectionIO[List[Copy]] =
+      listForEditionQuery(isbn, pagination)
+        .to[List]
+
+    override def listForOwner(offeredBy: Id[User], pagination: CopyPagination): ConnectionIO[List[Copy]] =
+      listForOwnerQuery(offeredBy, pagination)
         .to[List]
   }
 
@@ -83,7 +90,19 @@ object CopyRepository {
          |WHERE id = $id
        """.stripMargin.query[Copy]
 
-  def listQuery(offeredBy: Id[User], pagination: CopyPagination): Query0[Copy] =
+  def listForEditionQuery(isbn: ISBN, pagination: CopyPagination): Query0[Copy] =
+    sql"""
+         |SELECT id, isbn, offered_by, offered_on, condition, status
+         |FROM copies
+         |WHERE isbn = $isbn
+         |AND status != 'withdrawn'
+         |AND status != 'swapped'
+         |AND offered_on <= ${pagination.offeredOnOrBefore}
+         |ORDER BY offered_on DESC
+         |LIMIT ${pagination.pageSize.value}
+       """.stripMargin.query[Copy]
+
+  def listForOwnerQuery(offeredBy: Id[User], pagination: CopyPagination): Query0[Copy] =
     sql"""
          |SELECT id, isbn, offered_by, offered_on, condition, status
          |FROM copies

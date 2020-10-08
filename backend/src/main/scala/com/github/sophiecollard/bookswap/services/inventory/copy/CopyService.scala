@@ -24,8 +24,11 @@ trait CopyService[F[_]] {
   /** Fetches a Copy */
   def get(id: Id[Copy]): F[ServiceErrorOr[Copy]]
 
+  /** Fetches a list of Copies for a specified ISBN */
+  def listForEdition(isbn: ISBN, pagination: CopyPagination): F[List[Copy]]
+
   /** Fetches a list of Copies offered by a User */
-  def list(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]]
+  def listForOwner(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]]
 
   /** Invoked by a registered user to create a new Copy */
   def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]]
@@ -53,9 +56,14 @@ object CopyService {
       getWithoutTransaction(id)
         .transact(transactor)
 
-    override def list(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]] =
+    override def listForEdition(isbn: ISBN, pagination: CopyPagination): F[List[Copy]] =
       copyRepository
-        .list(offeredBy, pagination)
+        .listForEdition(isbn, pagination)
+        .transact(transactor)
+
+    override def listForOwner(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]] =
+      copyRepository
+        .listForOwner(offeredBy, pagination)
         .transact(transactor)
 
     override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]] =

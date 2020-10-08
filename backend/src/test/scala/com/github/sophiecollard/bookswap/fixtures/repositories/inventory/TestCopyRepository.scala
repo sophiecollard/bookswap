@@ -2,9 +2,9 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.inventory
 
 import java.time.LocalDateTime
 
-import cats.{Id => CatsId, Order}
+import cats.{Order, Id => CatsId}
 import cats.syntax.order._
-import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus}
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
@@ -42,10 +42,19 @@ class TestCopyRepository extends CopyRepository[CatsId] {
   override def get(id: Id[Copy]): CatsId[Option[Copy]] =
     store.get(id)
 
-  override def list(offeredBy: Id[User], pagination: CopyPagination): CatsId[List[Copy]] =
-    store
-      .values
-      .toList
+  override def listForEdition(isbn: ISBN, pagination: CopyPagination): CatsId[List[Copy]] =
+    store.values.toList
+      .filter { copy =>
+        copy.isbn == isbn &&
+          copy.status != CopyStatus.Withdrawn &&
+          copy.status != CopyStatus.Swapped &&
+          copy.offeredOn <= pagination.offeredOnOrBefore
+      }
+      .sortBy(_.offeredOn)(Ordering[LocalDateTime].reverse)
+      .take(pagination.pageSize.value)
+
+  override def listForOwner(offeredBy: Id[User], pagination: CopyPagination): CatsId[List[Copy]] =
+    store.values.toList
       .filter { copy =>
         copy.offeredBy == offeredBy &&
           copy.offeredOn <= pagination.offeredOnOrBefore
