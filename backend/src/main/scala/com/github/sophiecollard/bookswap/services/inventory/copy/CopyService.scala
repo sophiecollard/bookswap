@@ -7,7 +7,7 @@ import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.authorization.instances.{ByActiveStatus, WithAuthorizationByActiveStatus}
 import com.github.sophiecollard.bookswap.domain.inventory.CopyStatus.{Available, Withdrawn}
-import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
@@ -23,6 +23,9 @@ trait CopyService[F[_]] {
 
   /** Fetches a Copy */
   def get(id: Id[Copy]): F[ServiceErrorOr[Copy]]
+
+  /** Fetches a list of Copies offered by a User */
+  def list(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]]
 
   /** Invoked by a registered user to create a new Copy */
   def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]]
@@ -48,6 +51,11 @@ object CopyService {
   ): CopyService[F] = new CopyService[F] {
     override def get(id: Id[Copy]): F[ServiceErrorOr[Copy]] =
       getWithoutTransaction(id)
+        .transact(transactor)
+
+    override def list(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]] =
+      copyRepository
+        .list(offeredBy, pagination)
         .transact(transactor)
 
     override def create(edition: ISBN, condition: Condition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Copy]]] =

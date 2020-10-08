@@ -1,8 +1,12 @@
 package com.github.sophiecollard.bookswap.fixtures.repositories.inventory
 
-import cats.{Id => CatsId}
-import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus}
+import java.time.LocalDateTime
+
+import cats.{Id => CatsId, Order}
+import cats.syntax.order._
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
 class TestCopyRepository extends CopyRepository[CatsId] {
@@ -38,7 +42,23 @@ class TestCopyRepository extends CopyRepository[CatsId] {
   override def get(id: Id[Copy]): CatsId[Option[Copy]] =
     store.get(id)
 
+  override def list(offeredBy: Id[User], pagination: CopyPagination): CatsId[List[Copy]] =
+    store
+      .values
+      .toList
+      .filter { copy =>
+        copy.offeredBy == offeredBy &&
+          copy.offeredOn <= pagination.offeredOnOrBefore
+      }
+      .sortBy(_.offeredOn)(Ordering[LocalDateTime].reverse)
+      .take(pagination.pageSize.value)
+
   private var store: Map[Id[Copy], Copy] =
     Map.empty
+
+  // TODO Move into a shared instances package
+  implicit val localDateTimeOrder: Order[LocalDateTime] = {
+    Order.from[LocalDateTime](_ compareTo _)
+  }
 
 }

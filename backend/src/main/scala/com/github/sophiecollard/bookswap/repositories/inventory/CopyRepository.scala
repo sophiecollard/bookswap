@@ -1,7 +1,8 @@
 package com.github.sophiecollard.bookswap.repositories.inventory
 
-import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus}
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.user.User
 import doobie.implicits._
 import doobie.implicits.javatime._
 import doobie.{ConnectionIO, Query0, Update, Update0}
@@ -19,6 +20,9 @@ trait CopyRepository[F[_]] {
 
   /** Returns the specified Copy */
   def get(id: Id[Copy]): F[Option[Copy]]
+
+  /** Returns a list of Copies offred by the specified User */
+  def list(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]]
 
 }
 
@@ -43,6 +47,10 @@ object CopyRepository {
     override def get(id: Id[Copy]): ConnectionIO[Option[Copy]] =
       getQuery(id)
         .option
+
+    override def list(offeredBy: Id[User], pagination: CopyPagination): ConnectionIO[List[Copy]] =
+      listQuery(offeredBy, pagination)
+        .to[List]
   }
 
   val createUpdate: Update[Copy] =
@@ -73,6 +81,16 @@ object CopyRepository {
          |SELECT id, isbn, offered_by, offered_on, condition, status
          |FROM copies
          |WHERE id = $id
+       """.stripMargin.query[Copy]
+
+  def listQuery(offeredBy: Id[User], pagination: CopyPagination): Query0[Copy] =
+    sql"""
+         |SELECT id, isbn, offered_by, offered_on, condition, status
+         |FROM copies
+         |WHERE offered_by = $offeredBy
+         |AND offered_on <= ${pagination.offeredOnOrBefore}
+         |ORDER BY offered_on DESC
+         |LIMIT ${pagination.pageSize.value}
        """.stripMargin.query[Copy]
 
 }

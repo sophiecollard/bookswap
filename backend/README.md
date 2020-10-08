@@ -198,6 +198,8 @@ CREATE TABLE copies (
   status     copy_status    NOT NULL
 );
 
+CREATE INDEX copy_offered_by_on_index ON copies (offered_by, offered_on);
+
 CREATE TYPE request_status AS ENUM (
   'pending',
   'accepted',
