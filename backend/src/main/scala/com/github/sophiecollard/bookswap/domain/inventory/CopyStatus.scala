@@ -1,12 +1,15 @@
 package com.github.sophiecollard.bookswap.domain.inventory
 
-import enumeratum.values.{StringDoobieEnum, StringEnum, StringEnumEntry}
+import enumeratum.values.{StringCirceEnum, StringDoobieEnum, StringEnum, StringEnumEntry}
 
 import scala.collection.immutable
 
 sealed abstract class CopyStatus(val value: String) extends StringEnumEntry
 
-object CopyStatus extends StringEnum[CopyStatus] with StringDoobieEnum[CopyStatus] {
+object CopyStatus
+  extends StringEnum[CopyStatus]
+    with StringCirceEnum[CopyStatus]
+    with StringDoobieEnum[CopyStatus] {
 
   case object Available extends CopyStatus("available")
   case object Reserved  extends CopyStatus("reserved")

@@ -1,10 +1,7 @@
 package com.github.sophiecollard.bookswap.api.inventory.copy
 
 import com.github.sophiecollard.bookswap.api.Converter
-import com.github.sophiecollard.bookswap.api.model.inventory.Condition
-import com.github.sophiecollard.bookswap.api.syntax._
-import com.github.sophiecollard.bookswap.domain
-import com.github.sophiecollard.bookswap.domain.inventory.ISBN
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, ISBN}
 import io.circe.Decoder
 import io.circe.generic.semiauto
 
@@ -18,11 +15,11 @@ object CreateCopyRequestBody {
   implicit val decoder: Decoder[CreateCopyRequestBody] =
     semiauto.deriveDecoder
 
-  implicit val converterTo: Converter[CreateCopyRequestBody, (domain.inventory.ISBN, domain.inventory.Condition)] =
+  implicit val converter: Converter[CreateCopyRequestBody, (ISBN, Condition)] =
     Converter.instance { requestBody =>
       (
         requestBody.isbn,
-        requestBody.condition.convertTo[domain.inventory.Condition]
+        requestBody.condition
       )
     }
 

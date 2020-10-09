@@ -3,10 +3,9 @@ package com.github.sophiecollard.bookswap.api.inventory.copy
 import java.time.LocalDateTime
 
 import com.github.sophiecollard.bookswap.api.Converter
-import com.github.sophiecollard.bookswap.api.model.inventory.{Condition, CopyStatus}
 import com.github.sophiecollard.bookswap.api.model.shared.Id
 import com.github.sophiecollard.bookswap.api.syntax.ConverterSyntax
-import com.github.sophiecollard.bookswap.domain.inventory.{Copy, ISBN}
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.user.User
 import io.circe.Encoder
 import io.circe.generic.semiauto
@@ -25,15 +24,15 @@ object CopyResponseBody {
   implicit val encoder: Encoder[CopyResponseBody] =
     semiauto.deriveEncoder
 
-  implicit val converterFrom: Converter[Copy, CopyResponseBody] =
+  implicit val converter: Converter[Copy, CopyResponseBody] =
     Converter.instance { copy =>
       CopyResponseBody(
         id = copy.id.convertTo[Id[Copy]],
         isbn = copy.isbn,
         offeredBy = copy.offeredBy.convertTo[Id[User]],
         offeredOn = copy.offeredOn,
-        condition = copy.condition.convertTo[Condition],
-        status = copy.status.convertTo[CopyStatus]
+        condition = copy.condition,
+        status = copy.status
       )
     }
 

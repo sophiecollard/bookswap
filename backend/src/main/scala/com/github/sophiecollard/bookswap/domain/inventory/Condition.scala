@@ -1,12 +1,15 @@
 package com.github.sophiecollard.bookswap.domain.inventory
 
-import enumeratum.values.{StringDoobieEnum, StringEnum, StringEnumEntry}
+import enumeratum.values.{StringCirceEnum, StringDoobieEnum, StringEnum, StringEnumEntry}
 
 import scala.collection.immutable
 
 sealed abstract class Condition(val value: String) extends StringEnumEntry
 
-object Condition extends StringEnum[Condition] with StringDoobieEnum[Condition] {
+object Condition
+  extends StringEnum[Condition]
+    with StringCirceEnum[Condition]
+    with StringDoobieEnum[Condition] {
 
   case object BrandNew       extends Condition("brand_new")
   case object Good           extends Condition("good")
