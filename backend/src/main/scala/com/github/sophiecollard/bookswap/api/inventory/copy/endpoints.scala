@@ -5,9 +5,9 @@ import java.time.{LocalDateTime, ZoneId}
 import cats.effect.Sync
 import cats.implicits._
 import com.github.sophiecollard.bookswap.api.instances._
-import com.github.sophiecollard.bookswap.api.model.shared.Id
 import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain
+import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.inventory.copy.CopyService
 import org.http4s.HttpRoutes
@@ -54,7 +54,7 @@ object endpoints {
         OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) =>
         val pagination = CopyPagination(maybePageOffset, maybePageSize).convertTo[domain.inventory.CopyPagination]
-        service.listForOwner(offeredBy.convertTo[domain.shared.Id[User]], pagination).flatMap { copies =>
+        service.listForOwner(offeredBy, pagination).flatMap { copies =>
           Ok(copies.map(_.convertTo[CopyResponseBody]))
         }
       case GET -> Root / CopyIdVar(copyId) =>
