@@ -1,10 +1,10 @@
 package com.github.sophiecollard.bookswap.repositories.inventory
 
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
-import com.github.sophiecollard.bookswap.instances._
-import doobie.{ConnectionIO, Query0, Update0, Update}
+import com.github.sophiecollard.bookswap.repositories.instances._
 import doobie.implicits._
 import doobie.implicits.javatime._
+import doobie.{ConnectionIO, Query0, Update, Update0}
 
 trait EditionRepository[F[_]] {
 

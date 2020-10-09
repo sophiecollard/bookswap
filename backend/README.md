@@ -27,6 +27,74 @@ The `condition` field may take on one of the following values: `brand_new`, `goo
 
 The `status` field may take on one of the following values: `available`, `reserved`, `swapped`, `withdrawn`.
 
+##### List Copies by ISBN
+
+_Method and endpoint_
+
+```
+GET /v1/copies?isbn={isbn}
+```
+
+_Query parameters_
+
+The endpoint accepts the following query parameters:
+  * `?isbn={isbn}`
+  * `&page_offset={YYYY-MM-DDThh:mm:ss.sss±hh:mm}`
+  * `&page_size={page_size}`
+
+The `isbn` query parameter is mandatory and used to filter copies by ISBN while the `page_offset` and `page_size` 
+parameters are optional and used for pagination.
+
+_Sample response body_
+
+```json
+[
+  {
+    "id": "159c1470-0578-11eb-adc1-0242ac120002",
+    "isbn": "9781784875435",
+    "offered_by": "247e681c-0578-11eb-adc1-0242ac120002",
+    "offered_on": "2019-07-13T13:00:00Z",
+    "condition": "brand_new",
+    "status": "available"
+  },
+  ...
+]
+```
+
+##### List Copies by owner
+
+_Method and endpoint_
+
+```
+GET /v1/copies?offered_by={user_id}
+```
+
+_Query parameters_
+
+The endpoint accepts the following query parameters:
+  * `?offered_by={user_id}`
+  * `&page_offset={YYYY-MM-DDThh:mm:ss.sss±hh:mm}`
+  * `&page_size={page_size}`
+
+The `offered_by` query parameter is mandatory and used to filter copies by the user offering them while the 
+`page_offset` and `page_size` parameters are optional and used for pagination.
+
+_Sample response body_
+
+```json
+[
+  {
+    "id": "159c1470-0578-11eb-adc1-0242ac120002",
+    "isbn": "9781784875435",
+    "offered_by": "247e681c-0578-11eb-adc1-0242ac120002",
+    "offered_on": "2019-07-13T13:00:00Z",
+    "condition": "brand_new",
+    "status": "available"
+  },
+  ...
+]
+```
+
 ##### Create a Copy
 
 _Method and endpoint_

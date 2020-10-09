@@ -1,21 +1,20 @@
 package com.github.sophiecollard.bookswap.api.inventory.copy
 
-import java.util.UUID
+import java.time.{LocalDateTime, ZoneId}
 
 import cats.effect.Sync
 import cats.implicits._
+import com.github.sophiecollard.bookswap.api.instances._
+import com.github.sophiecollard.bookswap.api.model.shared.Id
 import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain
-import com.github.sophiecollard.bookswap.domain.inventory.Copy
-import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.inventory.copy.CopyService
 import org.http4s.HttpRoutes
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.dsl.Http4sDsl
-
-import scala.util.Try
+import org.http4s.dsl.impl.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
 
 object endpoints {
 
@@ -28,7 +27,9 @@ object endpoints {
     import dsl._
 
     // TODO Obtain Id[User] from AuthMiddleware
-    val userId = Id.generate[User]
+    val userId = domain.shared.Id.generate[User]
+    // TODO Pass in configuration
+    implicit val zoneId = ZoneId.of("UTC")
 
     HttpRoutes.of[F] {
       case req @ POST -> Root =>
@@ -41,6 +42,20 @@ object endpoints {
               }
             }
           }
+        }
+      case GET -> Root :? ISBNQueryParamMatcher(isbn) +&
+        OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyPagination(maybePageOffset, maybePageSize).convertTo[domain.inventory.CopyPagination]
+        service.listForEdition(isbn = isbn.convertTo[domain.inventory.ISBN], pagination).flatMap { copies =>
+          Ok(copies.map(_.convertTo[CopyResponseBody]))
+        }
+      case GET -> Root :? OfferedByQueryParamMatcher(offeredBy) +&
+        OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyPagination(maybePageOffset, maybePageSize).convertTo[domain.inventory.CopyPagination]
+        service.listForOwner(offeredBy.convertTo[domain.shared.Id[User]], pagination).flatMap { copies =>
+          Ok(copies.map(_.convertTo[CopyResponseBody]))
         }
       case GET -> Root / CopyIdVar(copyId) =>
         service.get(copyId).flatMap {
@@ -70,14 +85,7 @@ object endpoints {
     }
   }
 
-  object CopyIdVar {
-    def unapply(str: String): Option[Id[Copy]] =
-      if (!str.isEmpty)
-        Try(UUID.fromString(str))
-          .map(Id.apply[Copy])
-          .toOption
-      else
-        None
-  }
+  object OfferedOnOrBeforeParamMatcher extends OptionalQueryParamDecoderMatcher[LocalDateTime]("page_offset")
+  object OfferedByQueryParamMatcher extends QueryParamDecoderMatcher[Id[User]]("offered_by")
 
 }

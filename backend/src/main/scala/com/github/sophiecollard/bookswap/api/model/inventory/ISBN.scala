@@ -3,6 +3,7 @@ package com.github.sophiecollard.bookswap.api.model.inventory
 import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain
 import io.circe.{Decoder, Encoder}
+import org.http4s.{ParseFailure, QueryParamDecoder}
 
 sealed abstract case class ISBN(value: String)
 
@@ -23,6 +24,14 @@ object ISBN {
       apply(string) match {
         case Some(isbn) => Right(isbn)
         case None       => Left(s"Failed to parse ISBN from $string")
+      }
+    }
+
+  implicit val queryParamDecoder: QueryParamDecoder[ISBN] =
+    QueryParamDecoder[String].emap { string =>
+      apply(string) match {
+        case Some(isbn) => Right(isbn)
+        case None       => Left(ParseFailure(string, s"Failed to parse ISBN from $string"))
       }
     }
 

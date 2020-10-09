@@ -5,8 +5,11 @@ sealed abstract case class PageSize(value: Int)
 object PageSize {
 
   def apply(value: Int): Option[PageSize] =
-    if (value < 0) None
+    if (value < 0 || value > 100) None
     else Some(new PageSize(value) {})
+
+  def default: PageSize =
+    ten
 
   def nil: PageSize =
     new PageSize(0) {}
