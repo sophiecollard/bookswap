@@ -2,9 +2,8 @@ package com.github.sophiecollard.bookswap.api.instances
 
 import java.util.UUID
 
-import com.github.sophiecollard.bookswap.api.model.inventory.ISBN
 import com.github.sophiecollard.bookswap.api.model.shared.PageSize
-import com.github.sophiecollard.bookswap.domain.inventory.Copy
+import com.github.sophiecollard.bookswap.domain.inventory.{Copy, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import org.http4s.dsl.impl.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
 

@@ -149,7 +149,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
     val (activeUserId, adminUserId) = (Id.generate[User], Id.generate[User])
     val (unverifiedUserId, bannedUserId) = (Id.generate[User], Id.generate[User])
-    val (isbn, otherIsbn) = (ISBN.unvalidated("9781784875435"), ISBN.unvalidated("9780007232161"))
+    val (isbn, otherIsbn) = (ISBN.unsafeApply("9781784875435"), ISBN.unsafeApply("9780007232161"))
 
     userRepository.create(User(id = activeUserId, name = Name("ActiveUser"), status = UserStatus.Active))
     userRepository.create(User(id = adminUserId, name = Name("AdminUser"), status = UserStatus.Admin))

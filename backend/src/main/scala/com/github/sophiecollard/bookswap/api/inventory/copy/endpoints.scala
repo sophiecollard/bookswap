@@ -47,7 +47,7 @@ object endpoints {
         OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) =>
         val pagination = CopyPagination(maybePageOffset, maybePageSize).convertTo[domain.inventory.CopyPagination]
-        service.listForEdition(isbn = isbn.convertTo[domain.inventory.ISBN], pagination).flatMap { copies =>
+        service.listForEdition(isbn, pagination).flatMap { copies =>
           Ok(copies.map(_.convertTo[CopyResponseBody]))
         }
       case GET -> Root :? OfferedByQueryParamMatcher(offeredBy) +&
