@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.api.instances
 
 import java.util.UUID
 
-import com.github.sophiecollard.bookswap.domain.inventory.{Copy, ISBN}
+import com.github.sophiecollard.bookswap.domain.inventory.{Author, Copy, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, PageSize}
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import org.http4s.dsl.impl.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
@@ -14,6 +14,13 @@ trait http4s {
   object ISBNVar {
     def unapply(string: String): Option[ISBN] =
       ISBN(string)
+  }
+
+  object AuthorIdVar {
+    def unapply(string: String): Option[Id[Author]] =
+      Try(UUID.fromString(string))
+        .map(Id.apply[Author])
+        .toOption
   }
 
   object CopyIdVar {
