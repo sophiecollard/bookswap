@@ -38,7 +38,7 @@ object endpoints {
           service.create(isbn, condition)(userId).flatMap {
             withSuccessfulAuthorization {
               withNoServiceError { copy =>
-                Ok(copy.convertTo[CopyResponseBody])
+                Created(copy.convertTo[CopyResponseBody])
               }
             }
           }

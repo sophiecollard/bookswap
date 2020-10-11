@@ -44,7 +44,7 @@ object endpoints {
           service.create(requestBody.convertTo[Id[Copy]])(userId).flatMap {
             withSuccessfulAuthorization {
               withNoServiceError { copyRequest =>
-                Ok(copyRequest.convertTo[CopyRequestResponseBody])
+                Created(copyRequest.convertTo[CopyRequestResponseBody])
               }
             }
           }
