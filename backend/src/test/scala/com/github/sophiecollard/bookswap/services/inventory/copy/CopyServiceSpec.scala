@@ -38,44 +38,44 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'listForEdition' method" should {
     "return a list of copies" in new WithCopyAvailable {
-      copyService.listForEdition(copy.isbn, CopyPagination.default) shouldBe List(copy)
+      val pagination = CopyPagination.default
+      copyService.listForEdition(copy.isbn, pagination) shouldBe List(copy)
     }
 
     "not return copies with status 'swapped'" in new WithCopySwapped {
-      copyService.listForEdition(copy.isbn, CopyPagination.default) shouldBe Nil
+      val pagination = CopyPagination.default
+      copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
 
     "not return copies with status 'withdrawn'" in new WithCopyWithdrawn {
-      copyService.listForEdition(copy.isbn, CopyPagination.default) shouldBe Nil
+      val pagination = CopyPagination.default
+      copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
 
     "return an empty list if the page size is zero" in new WithCopyAvailable {
       val pagination = CopyPagination(LocalDateTime.now, PageSize.nil)
-
       copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
 
     "return an empty list if no copy matches the pagination condition(s)" in new WithCopyAvailable {
       val pagination = CopyPagination(copy.offeredOn.minusDays(1), PageSize.ten)
-
       copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
   }
 
   "The 'listForOwner' method" should {
     "return a list of copies" in new WithCopyAvailable {
-      copyService.listForOwner(copyOwnerId, CopyPagination.default) shouldBe List(copy)
+      val pagination = CopyPagination.default
+      copyService.listForOwner(copyOwnerId, pagination) shouldBe List(copy)
     }
 
     "return an empty list if the page size is zero" in new WithCopyAvailable {
       val pagination = CopyPagination(LocalDateTime.now, PageSize.nil)
-
       copyService.listForOwner(copyOwnerId, pagination) shouldBe Nil
     }
 
     "return an empty list if no copy matches the pagination condition(s)" in new WithCopyAvailable {
       val pagination = CopyPagination(copy.offeredOn.minusDays(1), PageSize.ten)
-
       copyService.listForOwner(copyOwnerId, pagination) shouldBe Nil
     }
   }

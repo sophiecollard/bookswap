@@ -2,11 +2,12 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.inventory
 
 import java.time.LocalDateTime
 
-import cats.{Order, Id => CatsId}
 import cats.syntax.order._
-import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus, ISBN}
+import cats.{Id => CatsId}
+import com.github.sophiecollard.bookswap.domain.inventory._
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
+import com.github.sophiecollard.bookswap.fixtures.instances.javatime._
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 
 class TestCopyRepository extends CopyRepository[CatsId] {
@@ -64,10 +65,5 @@ class TestCopyRepository extends CopyRepository[CatsId] {
 
   private var store: Map[Id[Copy], Copy] =
     Map.empty
-
-  // TODO Move into a shared instances package
-  implicit val localDateTimeOrder: Order[LocalDateTime] = {
-    Order.from[LocalDateTime](_ compareTo _)
-  }
 
 }

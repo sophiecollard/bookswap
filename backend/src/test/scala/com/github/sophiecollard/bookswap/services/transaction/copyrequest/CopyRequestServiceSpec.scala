@@ -6,8 +6,8 @@ import cats.{~>, Id => CatsId}
 import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.{NotAnActiveUser, NotTheRequestIssuer, NotTheRequestedCopyOwner}
 import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
-import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
-import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
+import com.github.sophiecollard.bookswap.domain.shared.{Id, Name, PageSize}
+import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
@@ -33,6 +33,40 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       withLeft(copyRequestService.get(otherRequestId)) {
         _ shouldBe ResourceNotFound("CopyRequest", otherRequestId)
       }
+    }
+  }
+
+  "The 'listForCopy' method" should {
+    "return a list of requests" in new WithRequestPending {
+      val pagination = CopyRequestPagination.default
+      copyRequestService.listForCopy(copyId, pagination) shouldBe List(nextCopyRequest, copyRequest)
+    }
+
+    "return an empty list if the page size is zero" in new WithRequestPending {
+      val pagination = CopyRequestPagination(LocalDateTime.now, PageSize.nil)
+      copyRequestService.listForCopy(copyId, pagination) shouldBe Nil
+    }
+
+    "return an empty list if no request matches the pagination condition(s)" in new WithRequestPending {
+      val pagination = CopyRequestPagination(copyRequest.requestedOn.minusDays(1), PageSize.ten)
+      copyRequestService.listForCopy(copyId, pagination) shouldBe Nil
+    }
+  }
+
+  "The 'listForRequester' method" should {
+    "return a list of requests" in new WithRequestPending {
+      val pagination = CopyRequestPagination.default
+      copyRequestService.listForRequester(pagination)(requestIssuerId) shouldBe List(copyRequest)
+    }
+
+    "return an empty list if the page size is zero" in new WithRequestPending {
+      val pagination = CopyRequestPagination(LocalDateTime.now, PageSize.nil)
+      copyRequestService.listForRequester(pagination)(requestIssuerId) shouldBe Nil
+    }
+
+    "return an empty list if no request matches the pagination condition(s)" in new WithRequestPending {
+      val pagination = CopyRequestPagination(copyRequest.requestedOn.minusDays(1), PageSize.ten)
+      copyRequestService.listForRequester(pagination)(requestIssuerId) shouldBe Nil
     }
   }
 

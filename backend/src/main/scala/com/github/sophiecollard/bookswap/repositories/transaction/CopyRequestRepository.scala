@@ -2,7 +2,8 @@ package com.github.sophiecollard.bookswap.repositories.transaction
 
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
-import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
+import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
+import com.github.sophiecollard.bookswap.domain.user.User
 import doobie.implicits._
 import doobie.implicits.javatime._
 import doobie.{ConnectionIO, Query0, Update}
@@ -29,6 +30,12 @@ trait CopyRequestRepository[F[_]] {
 
   /** Returns the first CopyRequest added to the waiting list for the specified Copy */
   def findFirstOnWaitingList(copyId: Id[Copy]): F[Option[CopyRequest]]
+
+  /** Returns a list of CopyRequests for the specified Copy */
+  def listForCopy(copyId: Id[Copy], pagination: CopyRequestPagination): F[List[CopyRequest]]
+
+  /** Returns a list of CopyRequests requested by the specified User */
+  def listForRequester(requestedBy: Id[User], pagination: CopyRequestPagination): F[List[CopyRequest]]
 
 }
 
@@ -67,6 +74,14 @@ object CopyRequestRepository {
     override def findFirstOnWaitingList(copyId: Id[Copy]): ConnectionIO[Option[CopyRequest]] =
       findFirstOnWaitingListQuery(copyId)
         .option
+
+    override def listForCopy(copyId: Id[Copy], pagination: CopyRequestPagination): ConnectionIO[List[CopyRequest]] =
+      listForCopyQuery(copyId, pagination)
+        .to[List]
+
+    override def listForRequester(requestedBy: Id[User], pagination: CopyRequestPagination): ConnectionIO[List[CopyRequest]] =
+      listForRequesterQuery(requestedBy, pagination)
+        .to[List]
   }
 
   val createUpdate: Update[CopyRequest] =
@@ -132,6 +147,26 @@ object CopyRequestRepository {
          |AND status_name = 'on_waiting_list'
          |ORDER BY requested_on ASC
          |LIMIT 1
+       """.stripMargin.query[CopyRequest]
+
+  def listForCopyQuery(copyId: Id[Copy], pagination: CopyRequestPagination): Query0[CopyRequest] =
+    sql"""
+         |SELECT id, copy_id, requested_by, requested_on, status_name, status_timestamp
+         |FROM copy_requests
+         |WHERE copy_id = $copyId
+         |AND requested_on <= ${pagination.requestedOnOrBefore}
+         |ORDER BY requested_on DESC
+         |LIMIT ${pagination.pageSize.value}
+       """.stripMargin.query[CopyRequest]
+
+  def listForRequesterQuery(requestedBy: Id[User], pagination: CopyRequestPagination): Query0[CopyRequest] =
+    sql"""
+         |SELECT id, copy_id, requested_by, requested_on, status_name, status_timestamp
+         |FROM copy_requests
+         |WHERE requested_by = $requestedBy
+         |AND requested_on <= ${pagination.requestedOnOrBefore}
+         |ORDER BY requested_on DESC
+         |LIMIT ${pagination.pageSize.value}
        """.stripMargin.query[CopyRequest]
 
 }

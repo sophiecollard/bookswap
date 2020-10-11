@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.authorization.instances.{ByActiveStatus
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, CopyStatus}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus._
-import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
+import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
@@ -26,6 +26,12 @@ trait CopyRequestService[F[_]] {
 
   /** Fetches a CopyRequest */
   def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]]
+
+  /** Fetches a list of CopyRequests for the specified Copy */
+  def listForCopy(copyId: Id[Copy], pagination: CopyRequestPagination): F[List[CopyRequest]]
+
+  /** Invoked by a registered user to list the CopyRequests he/she issued */
+  def listForRequester(pagination: CopyRequestPagination)(userId: Id[User]): F[List[CopyRequest]]
 
   /** Invoked by a registered user to create a new CopyRequest */
   def create(copyId: Id[Copy])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[CopyRequest]]]
@@ -66,6 +72,16 @@ object CopyRequestService {
         copyRequestRepository
           .get(id)
           .orElse[ServiceError](ResourceNotFound("CopyRequest", id))
+          .transact(transactor)
+
+      override def listForCopy(copyId: Id[Copy], pagination: CopyRequestPagination): F[List[CopyRequest]] =
+        copyRequestRepository
+          .listForCopy(copyId, pagination)
+          .transact(transactor)
+
+      override def listForRequester(pagination: CopyRequestPagination)(userId: Id[User]): F[List[CopyRequest]] =
+        copyRequestRepository
+          .listForRequester(userId, pagination)
           .transact(transactor)
 
       override def create(copyId: Id[Copy])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[CopyRequest]]] =

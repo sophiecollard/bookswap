@@ -266,8 +266,8 @@ CREATE TABLE copies (
   status     copy_status    NOT NULL
 );
 
-CREATE INDEX copy_by_edition_index ON copies (isbn, status, offered_on);
-CREATE INDEX copy_by_owner_index ON copies (offered_by, offered_on);
+CREATE INDEX copy_by_isbn_index ON copies (isbn, status, offered_on);
+CREATE INDEX copy_by_offered_by_index ON copies (offered_by, offered_on);
 
 CREATE TYPE request_status AS ENUM (
   'pending',
@@ -288,4 +288,7 @@ CREATE TABLE copy_requests (
   status_name      request_status NOT NULL,
   status_timestamp TIMESTAMP
 );
+
+CREATE INDEX request_copy_id_index ON copies (copy_id, offered_on);
+CREATE INDEX request_requested_by_index ON copies (offered_by, offered_on);
 ```

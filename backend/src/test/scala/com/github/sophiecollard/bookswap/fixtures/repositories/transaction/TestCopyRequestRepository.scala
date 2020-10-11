@@ -1,10 +1,15 @@
 package com.github.sophiecollard.bookswap.fixtures.repositories.transaction
 
+import java.time.LocalDateTime
+
+import cats.syntax.order._
 import cats.{Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus.{Accepted, OnWaitingList, Pending}
-import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
+import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
+import com.github.sophiecollard.bookswap.domain.user.User
+import com.github.sophiecollard.bookswap.fixtures.instances.javatime._
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 
 class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
@@ -62,12 +67,28 @@ class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
     store.get(id)
 
   override def findFirstOnWaitingList(copyId: Id[Copy]): CatsId[Option[CopyRequest]] =
-    store
-      .values
-      .toList
+    store.values.toList
       .filter(r => r.copyId == copyId && r.status.isOnWaitingList)
       .sortBy(_.requestedOn)
       .headOption
+
+  override def listForCopy(copyId: Id[Copy], pagination: CopyRequestPagination): CatsId[List[CopyRequest]] =
+    store.values.toList
+      .filter { request =>
+        request.copyId == copyId &&
+          request.requestedOn <= pagination.requestedOnOrBefore
+      }
+      .sortBy(_.requestedOn)(Ordering[LocalDateTime].reverse)
+      .take(pagination.pageSize.value)
+
+  override def listForRequester(requestedBy: Id[User], pagination: CopyRequestPagination): CatsId[List[CopyRequest]] =
+    store.values.toList
+      .filter { request =>
+        request.requestedBy == requestedBy &&
+          request.requestedOn <= pagination.requestedOnOrBefore
+      }
+      .sortBy(_.requestedOn)(Ordering[LocalDateTime].reverse)
+      .take(pagination.pageSize.value)
 
   private var store: Map[Id[CopyRequest], CopyRequest] =
     Map.empty

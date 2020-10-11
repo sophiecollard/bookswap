@@ -46,14 +46,14 @@ object endpoints {
       case GET -> Root :? ISBNQueryParamMatcher(isbn) +&
         OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyPagination.fromOptionalQueryParams(maybePageOffset, maybePageSize)
+        val pagination = CopyPagination.fromOptionalValues(maybePageOffset, maybePageSize)
         service.listForEdition(isbn, pagination).flatMap { copies =>
           Ok(copies.map(_.convertTo[CopyResponseBody]))
         }
       case GET -> Root :? OfferedByQueryParamMatcher(offeredBy) +&
         OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyPagination.fromOptionalQueryParams(maybePageOffset, maybePageSize)
+        val pagination = CopyPagination.fromOptionalValues(maybePageOffset, maybePageSize)
         service.listForOwner(offeredBy, pagination).flatMap { copies =>
           Ok(copies.map(_.convertTo[CopyResponseBody]))
         }

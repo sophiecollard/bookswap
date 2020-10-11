@@ -11,21 +11,24 @@ final case class CopyPagination(
 
 object CopyPagination {
 
-  def fromOptionalQueryParams(
+  def fromOptionalValues(
     maybeOfferedOnOrBefore: Option[LocalDateTime],
     maybePageSize: Option[PageSize]
   )(
     implicit zoneId: ZoneId
   ): CopyPagination =
     CopyPagination(
-      offeredOnOrBefore = maybeOfferedOnOrBefore.getOrElse(LocalDateTime.now(zoneId)),
+      offeredOnOrBefore = maybeOfferedOnOrBefore.getOrElse(defaultPageOffset),
       pageSize = maybePageSize.getOrElse(PageSize.default)
     )
 
   def default(implicit zoneId: ZoneId): CopyPagination =
     CopyPagination(
-      offeredOnOrBefore = LocalDateTime.now(zoneId),
-      pageSize = PageSize.ten
+      offeredOnOrBefore = defaultPageOffset,
+      pageSize = PageSize.default
     )
+
+  private def defaultPageOffset(implicit zoneId: ZoneId): LocalDateTime =
+    LocalDateTime.now(zoneId)
 
 }

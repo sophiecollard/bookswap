@@ -24,7 +24,7 @@ trait CopyService[F[_]] {
   /** Fetches a Copy */
   def get(id: Id[Copy]): F[ServiceErrorOr[Copy]]
 
-  /** Fetches a list of Copies for a specified ISBN */
+  /** Fetches a list of Copies for the specified ISBN */
   def listForEdition(isbn: ISBN, pagination: CopyPagination): F[List[Copy]]
 
   /** Fetches a list of Copies offered by a User */
