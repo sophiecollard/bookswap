@@ -6,8 +6,7 @@ import cats.effect.Sync
 import cats.implicits._
 import com.github.sophiecollard.bookswap.api.instances._
 import com.github.sophiecollard.bookswap.api.syntax._
-import com.github.sophiecollard.bookswap.domain
-import com.github.sophiecollard.bookswap.domain.inventory.CopyPagination
+import com.github.sophiecollard.bookswap.domain.inventory.{Condition, CopyPagination, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.inventory.copy.CopyService
@@ -28,14 +27,14 @@ object endpoints {
     import dsl._
 
     // TODO Obtain Id[User] from AuthMiddleware
-    val userId = domain.shared.Id.generate[User]
+    val userId = Id.generate[User]
     // TODO Pass in configuration
     implicit val zoneId = ZoneId.of("UTC")
 
     HttpRoutes.of[F] {
       case req @ POST -> Root =>
         req.as[CreateCopyRequestBody].flatMap { requestBody =>
-          val (isbn, condition) = requestBody.convertTo[(domain.inventory.ISBN, domain.inventory.Condition)]
+          val (isbn, condition) = requestBody.convertTo[(ISBN, Condition)]
           service.create(isbn, condition)(userId).flatMap {
             withSuccessfulAuthorization {
               withNoServiceError { copy =>
@@ -66,7 +65,7 @@ object endpoints {
         }
       case req @ PUT -> Root / CopyIdVar(copyId) =>
         req.as[UpdateCopyRequestBody].flatMap { requestBody =>
-          val condition = requestBody.convertTo[domain.inventory.Condition]
+          val condition = requestBody.convertTo[Condition]
           service.updateCondition(copyId, condition)(userId).flatMap {
             withSuccessfulAuthorization {
               withNoServiceError { copy =>
