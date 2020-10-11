@@ -1,17 +1,21 @@
 package com.github.sophiecollard.bookswap.api.transaction.copyrequest
 
+import java.time.{LocalDateTime, ZoneId}
+
 import cats.effect.Sync
 import cats.implicits._
-import com.github.sophiecollard.bookswap.api.instances.http4s.CopyRequestIdVar
+import com.github.sophiecollard.bookswap.api.instances._
 import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.transaction.CopyRequestPagination
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.CopyRequestService
 import org.http4s.HttpRoutes
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.dsl.Http4sDsl
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 
 object endpoints {
 
@@ -25,6 +29,8 @@ object endpoints {
 
     // TODO Obtain Id[User] from AuthMiddleware
     val userId = Id.generate[User]
+    // TODO Pass in configuration
+    implicit val zoneId = ZoneId.of("UTC")
 
     HttpRoutes.of[F] {
       case req @ POST -> Root =>
@@ -35,6 +41,25 @@ object endpoints {
                 Ok(copyRequest.convertTo[CopyRequestResponseBody])
               }
             }
+          }
+        }
+      case GET -> Root :? CopyIdQueryParamMatcher(copyId) +&
+        RequestedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyRequestPagination.fromOptionalValues(maybePageOffset, maybePageSize)
+        service.listForCopy(copyId, pagination).flatMap { copyRequests =>
+          Ok(copyRequests.map(_.convertTo[CopyRequestResponseBody]))
+        }
+      case GET -> Root :? RequestedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyRequestPagination.fromOptionalValues(maybePageOffset, maybePageSize)
+        service.listForRequester(pagination)(userId).flatMap { copyRequests =>
+          Ok(copyRequests.map(_.convertTo[CopyRequestResponseBody]))
+        }
+      case GET -> Root / CopyRequestIdVar(copyRequestId) =>
+        service.get(copyRequestId).flatMap {
+          withNoServiceError { copyRequest =>
+            Ok(copyRequest.convertTo[CopyRequestResponseBody])
           }
         }
       case DELETE -> Root / CopyRequestIdVar(copyRequestId) =>
@@ -65,5 +90,7 @@ object endpoints {
         }
     }
   }
+
+  object RequestedOnOrBeforeParamMatcher extends OptionalQueryParamDecoderMatcher[LocalDateTime]("page_offset")
 
 }

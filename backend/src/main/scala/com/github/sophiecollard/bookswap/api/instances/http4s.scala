@@ -28,6 +28,7 @@ trait http4s {
   object PageSizeParamMatcher extends OptionalQueryParamDecoderMatcher[PageSize]("page_size")
 
   object ISBNQueryParamMatcher extends QueryParamDecoderMatcher[ISBN]("isbn")
+  object CopyIdQueryParamMatcher extends QueryParamDecoderMatcher[Id[Copy]]("copy_id")
 
 }
 
