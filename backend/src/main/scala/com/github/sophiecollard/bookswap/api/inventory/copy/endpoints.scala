@@ -7,6 +7,7 @@ import cats.implicits._
 import com.github.sophiecollard.bookswap.api.instances._
 import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain
+import com.github.sophiecollard.bookswap.domain.inventory.CopyPagination
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.inventory.copy.CopyService
@@ -46,14 +47,14 @@ object endpoints {
       case GET -> Root :? ISBNQueryParamMatcher(isbn) +&
         OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyPagination(maybePageOffset, maybePageSize).convertTo[domain.inventory.CopyPagination]
+        val pagination = CopyPagination.fromOptionalQueryParams(maybePageOffset, maybePageSize)
         service.listForEdition(isbn, pagination).flatMap { copies =>
           Ok(copies.map(_.convertTo[CopyResponseBody]))
         }
       case GET -> Root :? OfferedByQueryParamMatcher(offeredBy) +&
         OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyPagination(maybePageOffset, maybePageSize).convertTo[domain.inventory.CopyPagination]
+        val pagination = CopyPagination.fromOptionalQueryParams(maybePageOffset, maybePageSize)
         service.listForOwner(offeredBy, pagination).flatMap { copies =>
           Ok(copies.map(_.convertTo[CopyResponseBody]))
         }

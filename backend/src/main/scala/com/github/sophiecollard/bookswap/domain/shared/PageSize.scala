@@ -1,5 +1,7 @@
 package com.github.sophiecollard.bookswap.domain.shared
 
+import org.http4s.{ParseFailure, QueryParamDecoder}
+
 sealed abstract case class PageSize(value: Int)
 
 object PageSize {
@@ -16,5 +18,13 @@ object PageSize {
 
   def ten: PageSize =
     new PageSize(10) {}
+
+  implicit val queryParamDecoder: QueryParamDecoder[PageSize] =
+    QueryParamDecoder[Int].emap { int =>
+      apply(int) match {
+        case Some(pageSize) => Right(pageSize)
+        case None           => Left(ParseFailure(int.toString, s"Failed to parse PageSize from $int"))
+      }
+    }
 
 }
