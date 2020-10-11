@@ -22,7 +22,7 @@ import com.github.sophiecollard.bookswap.syntax._
 
 trait CopyRequestService[F[_]] {
 
-  import CopyRequestService.Statuses
+  import CopyRequestService.RequestAndCopy
 
   /** Fetches a CopyRequest */
   def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]]
@@ -31,21 +31,22 @@ trait CopyRequestService[F[_]] {
   def create(copyId: Id[Copy])(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[CopyRequest]]]
 
   /** Invoked by a registered user to cancel one of their CopyRequests */
-  def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]]
+  def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[RequestAndCopy]]]
 
   /** Invoked by the Copy owner to accept a CopyRequest */
-  def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]]
+  def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[RequestAndCopy]]]
 
   /** Invoked by the Copy owner to reject CopyRequest */
-  def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]]
+  def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[RequestAndCopy]]]
 
   /** Invoked by the Copy owner to mark a CopyRequest as fulfilled */
-  def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]]
+  def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[RequestAndCopy]]]
 
 }
 
 object CopyRequestService {
 
+  type RequestAndCopy = (CopyRequest, Copy)
   type Statuses = (RequestStatus, CopyStatus)
 
   type AuthorizationInput = (Id[User], Id[CopyRequest])
@@ -84,22 +85,22 @@ object CopyRequestService {
             .transact(transactor)
         }
 
-      override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[Statuses]]] =
+      override def cancel(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByRequestIssuer[ServiceErrorOr[RequestAndCopy]]] =
         authorizationByRequestIssuer.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleCancelCommand)
         }
 
-      override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
+      override def accept(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[RequestAndCopy]]] =
         authorizationByCopyOwner.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleAcceptCommand)
         }
 
-      override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
+      override def reject(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[RequestAndCopy]]] =
         authorizationByCopyOwner.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleRejectCommand)
         }
 
-      override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Statuses]]] =
+      override def markAsFulfilled(requestId: Id[CopyRequest])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[RequestAndCopy]]] =
         authorizationByCopyOwner.authorize((userId, requestId)) {
           handleCommand(requestId)(StateMachine.handleMarkAsFulfilledCommand)
         }
@@ -108,7 +109,7 @@ object CopyRequestService {
         requestId: Id[CopyRequest]
       )(
         handler: InitialState => Either[InvalidState, StateUpdate]
-      ): F[ServiceErrorOr[Statuses]] =
+      ): F[ServiceErrorOr[RequestAndCopy]] =
         (
           for {
             (copyRequest, copy, maybeNextCopyRequest) <- (
@@ -125,12 +126,14 @@ object CopyRequestService {
               } yield (copyRequest, copy, maybeNextCopyRequest)
             ).mapK[F](transactor)
             initialState = InitialState(copyRequest.status, maybeNextCopyRequest.map(r =>(r.id, r.status)), copy.status)
-            statuses <- handler(initialState)
+            (updatedRequestStatus, updatedCopyStatus) <- handler(initialState)
               .pure[F]
               .asEitherT
               .leftMap[ServiceError](_ => ServiceError.InvalidState(s"Invalid state: $initialState"))
               .flatMapF(performStateUpdate(copyRequest.id, copy.id, initialState))
-          } yield statuses
+            updatedRequest = copyRequest.copy(status = updatedRequestStatus)
+            updatedCopy = copy.copy(status = updatedCopyStatus)
+          } yield (updatedRequest, updatedCopy)
         ).value
 
       private def performStateUpdate(

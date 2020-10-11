@@ -78,9 +78,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "cancel a pending request" in new WithRequestPending {
       withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isCancelled)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isCancelled)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -90,9 +90,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "cancel a request on the waiting list" in new WithRequestOnWaitingList {
       withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isCancelled)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isCancelled)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -102,9 +102,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "cancel a rejected request" in new WithRequestRejected {
       withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isCancelled)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isCancelled)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -115,9 +115,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     "cancel an accepted request and accept the next request on the waiting list" in
       new WithNextRequestOnWaitingList {
         withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-            assert(returnedRequestStatus.isCancelled)
-            assert(returnedCopyStatus == initialCopyStatus)
+          withNoServiceError { case (returnedRequest, returnedCopy) =>
+            assert(returnedRequest.status.isCancelled)
+            assert(returnedCopy.status == initialCopyStatus)
           }
         }
 
@@ -129,9 +129,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     "cancel an accepted request and update the copy status back to 'Available' if there is no waiting list" in
       new WithRequestAccepted {
         withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-            assert(returnedRequestStatus.isCancelled)
-            assert(returnedCopyStatus == CopyStatus.Available)
+          withNoServiceError { case (returnedRequest, returnedCopy) =>
+            assert(returnedRequest.status.isCancelled)
+            assert(returnedCopy.status == CopyStatus.Available)
           }
         }
 
@@ -141,9 +141,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a cancelled request" in new WithRequestCancelled {
       withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -153,9 +153,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a fulfilled request" in new WithRequestFulfilled {
       withSuccessfulAuthorization(copyRequestService.cancel(requestId)(requestIssuerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -173,9 +173,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "accept a pending request" in new WithRequestPending {
       withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isAccepted)
-          assert(returnedCopyStatus == CopyStatus.Reserved)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isAccepted)
+          assert(returnedCopy.status == CopyStatus.Reserved)
         }
       }
 
@@ -185,9 +185,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "accept a pending request on the waiting list if the copy is already reserved" in new WithRequestAccepted {
       withSuccessfulAuthorization(copyRequestService.accept(nextRequestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isOnWaitingList)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isOnWaitingList)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -197,9 +197,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "accept a rejected request" in new WithRequestRejected {
       withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isAccepted)
-          assert(returnedCopyStatus == CopyStatus.Reserved)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isAccepted)
+          assert(returnedCopy.status == CopyStatus.Reserved)
         }
       }
 
@@ -209,9 +209,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update an accepted request" in new WithRequestAccepted {
       withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -221,9 +221,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a request on the waiting list" in new WithRequestOnWaitingList {
       withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -233,9 +233,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a cancelled request" in new WithRequestCancelled {
       withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -245,9 +245,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a fulfilled request" in new WithRequestFulfilled {
       withSuccessfulAuthorization(copyRequestService.accept(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -265,9 +265,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "reject a pending request" in new WithRequestPending {
       withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isRejected)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isRejected)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -277,9 +277,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "reject a request on the waiting list" in new WithRequestOnWaitingList {
       withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isRejected)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isRejected)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -289,9 +289,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "reject an accepted request and accept the next request on the waiting list" in new WithNextRequestOnWaitingList {
       withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus.isRejected)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status.isRejected)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -303,9 +303,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     "reject an accepted request and update the copy status back to 'Available' if there is no waiting list" in
       new WithRequestAccepted {
         withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-            assert(returnedRequestStatus.isRejected)
-            assert(returnedCopyStatus == CopyStatus.Available)
+          withNoServiceError { case (returnedRequest, returnedCopy) =>
+            assert(returnedRequest.status.isRejected)
+            assert(returnedCopy.status == CopyStatus.Available)
           }
         }
 
@@ -315,9 +315,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a rejected request" in new WithRequestRejected {
       withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -327,9 +327,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a cancelled request" in new WithRequestCancelled {
       withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -339,9 +339,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a fulfilled request" in new WithRequestFulfilled {
       withSuccessfulAuthorization(copyRequestService.reject(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -360,9 +360,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     "mark an accepted request as fulfilled and reject all requests still pending or on the waiting list" in
       new WithRequestAccepted {
         withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
-          withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-            assert(returnedRequestStatus.isFulfilled)
-            assert(returnedCopyStatus == CopyStatus.Swapped)
+          withNoServiceError { case (returnedRequest, returnedCopy) =>
+            assert(returnedRequest.status.isFulfilled)
+            assert(returnedCopy.status == CopyStatus.Swapped)
           }
         }
 
@@ -373,9 +373,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a pending request" in new WithRequestPending {
       withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -385,9 +385,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a request on the waiting list" in new WithRequestOnWaitingList {
       withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -397,9 +397,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a rejected request" in new WithRequestRejected {
       withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -409,9 +409,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a cancelled request" in new WithRequestCancelled {
       withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
@@ -421,9 +421,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
     "not update a fulfilled request" in new WithRequestFulfilled {
       withSuccessfulAuthorization(copyRequestService.markAsFulfilled(requestId)(copyOwnerId)) {
-        withNoServiceError { case (returnedRequestStatus, returnedCopyStatus) =>
-          assert(returnedRequestStatus == initialRequestStatus)
-          assert(returnedCopyStatus == initialCopyStatus)
+        withNoServiceError { case (returnedRequest, returnedCopy) =>
+          assert(returnedRequest.status == initialRequestStatus)
+          assert(returnedCopy.status == initialCopyStatus)
         }
       }
 
