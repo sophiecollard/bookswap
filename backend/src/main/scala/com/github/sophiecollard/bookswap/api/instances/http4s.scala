@@ -4,6 +4,7 @@ import java.util.UUID
 
 import com.github.sophiecollard.bookswap.domain.inventory.{Copy, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, PageSize}
+import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import org.http4s.dsl.impl.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
 
 import scala.util.Try
@@ -11,13 +12,17 @@ import scala.util.Try
 trait http4s {
 
   object CopyIdVar {
-    def unapply(str: String): Option[Id[Copy]] =
-      if (!str.isEmpty)
-        Try(UUID.fromString(str))
-          .map(Id.apply[Copy])
-          .toOption
-      else
-        None
+    def unapply(string: String): Option[Id[Copy]] =
+      Try(UUID.fromString(string))
+        .map(Id.apply[Copy])
+        .toOption
+  }
+
+  object CopyRequestIdVar {
+    def unapply(string: String): Option[Id[CopyRequest]] =
+      Try(UUID.fromString(string))
+        .map(Id.apply[CopyRequest])
+        .toOption
   }
 
   object PageSizeParamMatcher extends OptionalQueryParamDecoderMatcher[PageSize]("page_size")
