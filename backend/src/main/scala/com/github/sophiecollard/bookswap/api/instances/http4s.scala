@@ -11,6 +11,11 @@ import scala.util.Try
 
 trait http4s {
 
+  object ISBNVar {
+    def unapply(string: String): Option[ISBN] =
+      ISBN(string)
+  }
+
   object CopyIdVar {
     def unapply(string: String): Option[Id[Copy]] =
       Try(UUID.fromString(string))
