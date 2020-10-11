@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.services.user
 
 import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.authorization.AuthorizationService
-import com.github.sophiecollard.bookswap.authorization.instances.{ByAdminStatus, BySelf, WithAuthorizationByAdminStatus, WithAuthorizationBySelf}
+import com.github.sophiecollard.bookswap.authorization.instances.{ByAdminStatus, WithAuthorizationByAdminStatus}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.repositories.user.UserRepository
@@ -22,14 +22,13 @@ trait UserService[F[_]] {
   def updateStatus(id: Id[User], status: UserStatus)(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
 
   /** Invoked by a User to delete itself */
-  def delete(id: Id[User])(userId: Id[User]): F[WithAuthorizationBySelf[ServiceErrorOr[Unit]]]
+  def delete(userId: Id[User]): F[ServiceErrorOr[Unit]]
 
 }
 
 object UserService {
 
   def create[F[_], G[_]: Monad](
-    authorizationBySelf: AuthorizationService[F, (Id[User], Id[User]), BySelf],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
     userRepository: UserRepository[G],
     transactor: G ~> F
@@ -70,19 +69,19 @@ object UserService {
         result.value.transact(transactor)
       }
 
-    override def delete(id: Id[User])(userId: Id[User]): F[WithAuthorizationBySelf[ServiceErrorOr[Unit]]] =
-      authorizationBySelf.authorize((id, userId)) {
-        val result = for {
-          _ <- getWithoutTransaction(id).asEitherT
-          _ <- userRepository
-            .delete(id)
-            .ifTrue(())
-            .orElse[ServiceError](FailedToDeleteResource("User", id))
-            .asEitherT
-        } yield ()
+    // TODO withdraw all copies and cancel all copy requests by that user
+    override def delete(userId: Id[User]): F[ServiceErrorOr[Unit]] = {
+      val result = for {
+        _ <- getWithoutTransaction(userId).asEitherT
+        _ <- userRepository
+          .delete(userId)
+          .ifTrue(())
+          .orElse[ServiceError](FailedToDeleteResource("User", userId))
+          .asEitherT
+      } yield ()
 
-        result.value.transact(transactor)
-      }
+      result.value.transact(transactor)
+    }
 
     private def getWithoutTransaction(id: Id[User]): G[ServiceErrorOr[User]] =
       userRepository

@@ -13,11 +13,6 @@ object error {
 
   object AuthorizationError {
 
-    final case class NotTheSameUser(firstUserId: Id[User], secondUserId: Id[User])
-      extends AuthorizationError(
-        message = s"User [${firstUserId.value}] is not the same as User [${secondUserId.value}]."
-      )
-
     final case class NotAnActiveUser(userId: Id[User])
       extends AuthorizationError(
         message = s"User [${userId.value}] is not an active user."
