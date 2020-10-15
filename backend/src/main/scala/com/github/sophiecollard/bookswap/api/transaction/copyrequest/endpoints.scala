@@ -40,7 +40,7 @@ object endpoints {
           Ok(copyRequests.map(_.convertTo[CopyRequestResponseBody]))
         }
       case authedReq @ POST -> Root as userId =>
-        authedReq.req.as[CreateCopyRequestRequestBody].flatMap { requestBody =>
+        authedReq.req.withBodyAs[CreateCopyRequestRequestBody] { requestBody =>
           service.create(requestBody.convertTo[Id[Copy]])(userId).flatMap {
             withSuccessfulAuthorization {
               withNoServiceError { copyRequest =>
@@ -58,7 +58,7 @@ object endpoints {
           }
         }
       case authedReq @ PATCH -> Root / CopyRequestIdVar(copyRequestId) as userId =>
-        authedReq.req.as[UpdateCopyRequestRequestBody].flatMap { requestBody =>
+        authedReq.req.withBodyAs[UpdateCopyRequestRequestBody] { requestBody =>
           val result = requestBody.command match {
             case Command.Accept =>
               service.accept(copyRequestId)(userId)

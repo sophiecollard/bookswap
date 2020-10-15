@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.api
 
-import cats.Applicative
+import cats.{Applicative, Monad}
 import cats.implicits._
 import com.github.sophiecollard.bookswap.api.error.ApiError
 import com.github.sophiecollard.bookswap.authorization
@@ -13,6 +13,20 @@ object syntax {
   implicit class ConverterSyntax[A](val value: A) extends AnyVal {
     def convertTo[B](implicit ev: Converter[A, B]): B =
       ev.convertTo(value)
+  }
+
+  implicit class RequestSyntax[F[_]](val request: Request[F]) extends AnyVal {
+    def withBodyAs[B](
+      ifNoDecodeFailure: B => F[Response[F]]
+    )(
+      implicit F: Monad[F],
+      decoder: EntityDecoder[F, B]
+    ): F[Response[F]] =
+      request
+        .attemptAs[B]
+        .leftMap(_.toHttpResponse[F](HttpVersion.`HTTP/1.1`))
+        .semiflatMap(ifNoDecodeFailure)
+        .merge
   }
 
   def withSuccessfulAuthorization[F[_]: Applicative, R, Tag](

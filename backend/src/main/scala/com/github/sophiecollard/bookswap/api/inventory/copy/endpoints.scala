@@ -33,7 +33,7 @@ object endpoints {
 
     val privateRoutes: AuthedRoutes[Id[User], F] = AuthedRoutes.of[Id[User], F] {
       case authedReq @ POST -> Root as userId =>
-        authedReq.req.as[CreateCopyRequestBody].flatMap { requestBody =>
+        authedReq.req.withBodyAs[CreateCopyRequestBody] { requestBody =>
           val (isbn, condition) = requestBody.convertTo[(ISBN, Condition)]
           service.create(isbn, condition)(userId).flatMap {
             withSuccessfulAuthorization {
@@ -44,7 +44,7 @@ object endpoints {
           }
         }
       case authedReq @ PUT -> Root / CopyIdVar(copyId) as userId =>
-        authedReq.req.as[UpdateCopyRequestBody].flatMap { requestBody =>
+        authedReq.req.withBodyAs[UpdateCopyRequestBody] { requestBody =>
           val condition = requestBody.convertTo[Condition]
           service.updateCondition(copyId, condition)(userId).flatMap {
             withSuccessfulAuthorization {

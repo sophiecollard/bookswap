@@ -27,7 +27,7 @@ object endpoints {
 
     val privateRoutes: AuthedRoutes[Id[User], F] = AuthedRoutes.of[Id[User], F] {
       case authedReq @ POST -> Root as userId =>
-        authedReq.req.as[CreateEditionRequestBody].flatMap { requestBody =>
+        authedReq.req.withBodyAs[CreateEditionRequestBody] { requestBody =>
           val edition = requestBody.convertTo[Edition]
           service.create(edition)(userId).flatMap {
             withSuccessfulAuthorization {
