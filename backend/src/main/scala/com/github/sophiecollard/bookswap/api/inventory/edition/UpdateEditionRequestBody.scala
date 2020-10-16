@@ -3,9 +3,9 @@ package com.github.sophiecollard.bookswap.api.inventory.edition
 import java.time.LocalDate
 
 import cats.data.NonEmptyList
-import com.github.sophiecollard.bookswap.api.{Converter, MaybeUpdate}
+import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain.inventory.{Author, EditionDetailsUpdate, Publisher, Title}
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, MaybeUpdate}
 import io.circe.Decoder
 import io.circe.generic.semiauto
 

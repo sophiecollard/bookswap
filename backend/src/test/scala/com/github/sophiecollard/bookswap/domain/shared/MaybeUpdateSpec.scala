@@ -1,6 +1,6 @@
-package com.github.sophiecollard.bookswap.api
+package com.github.sophiecollard.bookswap.domain.shared
 
-import com.github.sophiecollard.bookswap.api.MaybeUpdate.{NoUpdate, Update}
+import com.github.sophiecollard.bookswap.domain.shared.MaybeUpdate.{NoUpdate, Update}
 import io.circe.generic.semiauto
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, parser}

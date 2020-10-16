@@ -3,8 +3,7 @@ package com.github.sophiecollard.bookswap.domain.inventory
 import java.time.LocalDate
 
 import cats.data.NonEmptyList
-import com.github.sophiecollard.bookswap.api.MaybeUpdate
-import com.github.sophiecollard.bookswap.domain.shared.Id
+import com.github.sophiecollard.bookswap.domain.shared.{Id, MaybeUpdate}
 
 final case class EditionDetailsUpdate(
   title: MaybeUpdate[Title],

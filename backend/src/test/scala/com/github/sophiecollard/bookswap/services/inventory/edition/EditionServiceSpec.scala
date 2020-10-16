@@ -4,10 +4,10 @@ import java.time.{LocalDate, LocalDateTime, ZoneId}
 
 import cats.data.NonEmptyList
 import cats.{~>, Id => CatsId}
-import com.github.sophiecollard.bookswap.api.MaybeUpdate.{NoUpdate, Update}
 import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
 import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory._
+import com.github.sophiecollard.bookswap.domain.shared.MaybeUpdate.{NoUpdate, Update}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopyRepository, TestEditionRepository}
