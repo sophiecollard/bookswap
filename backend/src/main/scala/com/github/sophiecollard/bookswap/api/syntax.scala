@@ -15,6 +15,7 @@ object syntax {
       ev.convertTo(value)
   }
 
+  // TODO discard if handled by default service error handler
   implicit class RequestSyntax[F[_]](val request: Request[F]) extends AnyVal {
     def withBodyAs[B](
       ifNoDecodeFailure: B => F[Response[F]]
