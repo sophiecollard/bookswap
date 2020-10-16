@@ -24,7 +24,7 @@ object syntax {
     ): F[Response[F]] =
       request
         .attemptAs[B]
-        .leftMap(_.toHttpResponse[F](HttpVersion.`HTTP/1.1`))
+        .leftMap(_.toHttpResponse[F](request.httpVersion))
         .semiflatMap(ifNoDecodeFailure)
         .merge
   }
