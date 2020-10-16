@@ -6,7 +6,12 @@ import io.circe.Decoder.{AccumulatingResult, Result}
 import io.circe.syntax._
 import io.circe._
 
-sealed trait MaybeUpdate[+A]
+sealed trait MaybeUpdate[+A] {
+  final def getOrElse[AA >: A](ifNoUpdate: AA): AA = this match {
+    case MaybeUpdate.Update(a) => a
+    case MaybeUpdate.NoUpdate  => ifNoUpdate
+  }
+}
 
 object MaybeUpdate {
 

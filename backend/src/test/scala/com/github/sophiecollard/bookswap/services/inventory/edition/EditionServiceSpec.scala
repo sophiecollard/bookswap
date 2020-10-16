@@ -4,6 +4,7 @@ import java.time.{LocalDate, ZoneId}
 
 import cats.data.NonEmptyList
 import cats.{~>, Id => CatsId}
+import com.github.sophiecollard.bookswap.api.MaybeUpdate.{NoUpdate, Update}
 import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.{NotAnActiveUser, NotAnAdmin}
 import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory._
@@ -66,35 +67,37 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'update' method" should {
     "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
-      withFailedAuthorization(editionService.update(isbn, editionDetails)(unverifiedUserId)) {
+      withFailedAuthorization(editionService.update(isbn, detailsUpdate)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
-      withFailedAuthorization(editionService.update(isbn, editionDetails)(bannedUserId)) {
+      withFailedAuthorization(editionService.update(isbn, detailsUpdate)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
       }
     }
 
     "update an edition" in new WithEdition {
-      withSuccessfulAuthorization(editionService.update(isbn, editionDetails)(activeUserId)) {
+      val expectedResult = Edition(isbn = edition.isbn, details = edition.details.applyUpdate(detailsUpdate))
+
+      withSuccessfulAuthorization(editionService.update(isbn, detailsUpdate)(activeUserId)) {
         withNoServiceError { returnedEdition =>
-          assert(returnedEdition.title == editionDetails.title)
-          assert(returnedEdition.authorIds == editionDetails.authorIds)
-          assert(returnedEdition.publisherId == editionDetails.publisherId)
-          assert(returnedEdition.publicationDate == editionDetails.publicationDate)
+          assert(returnedEdition.title == expectedResult.title)
+          assert(returnedEdition.authorIds == expectedResult.authorIds)
+          assert(returnedEdition.publisherId == expectedResult.publisherId)
+          assert(returnedEdition.publicationDate == expectedResult.publicationDate)
 
           withSome(editionRepository.get(isbn)) { updatedEdition =>
-            assert(updatedEdition.title == editionDetails.title)
-            assert(updatedEdition.authorIds == editionDetails.authorIds)
-            assert(updatedEdition.publisherId == editionDetails.publisherId)
-            assert(updatedEdition.publicationDate == editionDetails.publicationDate)
+            assert(updatedEdition.title == expectedResult.title)
+            assert(updatedEdition.authorIds == expectedResult.authorIds)
+            assert(updatedEdition.publisherId == expectedResult.publisherId)
+            assert(updatedEdition.publicationDate == expectedResult.publicationDate)
           }
         }
       }
     }
 
     "return an error if the edition is not found" in new WithEdition {
-      withSuccessfulAuthorization(editionService.update(otherIsbn, editionDetails)(activeUserId)) {
+      withSuccessfulAuthorization(editionService.update(otherIsbn, detailsUpdate)(activeUserId)) {
         withServiceError {
           _ shouldBe EditionNotFound(otherIsbn)
         }
@@ -164,11 +167,11 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
       publicationDate = None
     )
 
-    val editionDetails = EditionDetails(
-      title = Title("The Makioka Sisters: Vintage Classics Japanese Series"),
-      authorIds = edition.authorIds,
-      publisherId = Some(Id.generate[Publisher]),
-      publicationDate = Some(LocalDate.of(2019, 10, 3))
+    val detailsUpdate = EditionDetailsUpdate(
+      title = Update(Title("The Makioka Sisters: Vintage Classics Japanese Series")),
+      authorIds = NoUpdate,
+      publisherId = Update(Some(Id.generate[Publisher])),
+      publicationDate = Update(Some(LocalDate.of(2019, 10, 3)))
     )
   }
 

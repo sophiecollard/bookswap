@@ -4,7 +4,7 @@ import cats.effect.Sync
 import cats.implicits._
 import com.github.sophiecollard.bookswap.api.instances.http4s.ISBNVar
 import com.github.sophiecollard.bookswap.api.syntax._
-import com.github.sophiecollard.bookswap.domain.inventory.Edition
+import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetailsUpdate}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.services.inventory.edition.EditionService
@@ -37,10 +37,17 @@ object endpoints {
             }
           }
         }
-//      case authedReq @ PUT -> Root / ISBNVar(isbn) as userId =>
-//        service.update(isbn, ???)(userId).flatMap {
-//          ???
-//        }
+      case authedReq @ PUT -> Root / ISBNVar(isbn) as userId =>
+        authedReq.req.withBodyAs[UpdateEditionRequestBody] { requestBody =>
+          val editionDetailsUpdate = requestBody.convertTo[EditionDetailsUpdate]
+          service.update(isbn, editionDetailsUpdate)(userId).flatMap {
+            withSuccessfulAuthorization {
+              withNoServiceError { edition =>
+                Ok(edition.convertTo[EditionResponseBody])
+              }
+            }
+          }
+        }
       case DELETE -> Root / ISBNVar(isbn) as userId =>
         service.delete(isbn)(userId).flatMap {
           withSuccessfulAuthorization {

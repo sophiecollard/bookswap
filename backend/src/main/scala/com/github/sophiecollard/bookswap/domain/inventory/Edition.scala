@@ -11,4 +11,22 @@ final case class Edition(
   authorIds: NonEmptyList[Id[Author]],
   publisherId: Option[Id[Publisher]],
   publicationDate: Option[LocalDate]
-)
+) {
+
+  val details: EditionDetails =
+    EditionDetails(title, authorIds, publisherId, publicationDate)
+
+}
+
+object Edition {
+
+  def apply(isbn: ISBN, details: EditionDetails): Edition =
+    Edition(
+      isbn,
+      title = details.title,
+      authorIds = details.authorIds,
+      publisherId = details.publisherId,
+      publicationDate = details.publicationDate
+    )
+
+}

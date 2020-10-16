@@ -3,7 +3,7 @@ package com.github.sophiecollard.bookswap.services.inventory.edition
 import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.authorization.instances._
-import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
+import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetailsUpdate, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.EditionRepository
@@ -20,7 +20,7 @@ trait EditionService[F[_]] {
   def create(edition: Edition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]]
 
   /** Invoked by a registered user to update an Edition */
-  def update(isbn: ISBN, details: EditionDetails)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]]
+  def update(isbn: ISBN, detailsUpdate: EditionDetailsUpdate)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]]
 
   /** Invoked by an admin user to delete an Edition */
   def delete(isbn: ISBN)(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
@@ -56,16 +56,17 @@ object EditionService {
         result.value.transact(transactor)
       }
 
-    override def update(isbn: ISBN, details: EditionDetails)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]] = {
+    override def update(isbn: ISBN, detailsUpdate: EditionDetailsUpdate)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]] = {
       authorizationByActiveStatus.authorize(userId) {
         val result = for {
-          _ <- getWithoutTransaction(isbn).asEitherT
-          _ <- repository
-            .update(isbn, details)
-            .ifTrue(())
+          edition <- getWithoutTransaction(isbn).asEitherT
+          updatedDetails = edition.details.applyUpdate(detailsUpdate)
+          updatedEdition <- repository
+            .update(isbn, updatedDetails)
+            .ifTrue(Edition(isbn, updatedDetails))
             .orElse[ServiceError](FailedToUpdateEdition(isbn))
             .asEitherT
-        } yield Edition(isbn, details.title, details.authorIds, details.publisherId, details.publicationDate)
+        } yield updatedEdition
 
         result.value.transact(transactor)
       }
