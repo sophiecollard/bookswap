@@ -21,6 +21,8 @@ object error {
           NotFound(error.responseBody)
         case error @ ApiError.ResourceAlreadyExists(_) =>
           Conflict(error.responseBody)
+        case error @ ApiError.ResourceCantBeDeleted(_) =>
+          Conflict(error.responseBody)
         case error @ ApiError.FailedToCreateResource(_) =>
           InternalServerError(error.responseBody)
         case error @ ApiError.FailedToUpdateResource(_) =>
@@ -46,6 +48,13 @@ object error {
     final case class ResourceAlreadyExists(message: String) extends ApiError(
       responseBody = ErrorResponseBody(
         code = Code("resource_already_exists"),
+        message = Message(message)
+      )
+    )
+
+    final case class ResourceCantBeDeleted(message: String) extends ApiError(
+      responseBody = ErrorResponseBody(
+        code = Code("resource_cant_be_deleted"),
         message = Message(message)
       )
     )
@@ -93,6 +102,8 @@ object error {
           ResourceAlreadyExists(error.message)
         case error @ ServiceError.EditionAlreadyExists(_) =>
           ResourceAlreadyExists(error.message)
+        case error @ ServiceError.EditionStillHasCopiesOnOffer(_) =>
+          ResourceCantBeDeleted(error.message)
         case ServiceError.FailedToCreateResource(resourceName, _) =>
           FailedToCreateResource(resourceName)
         case ServiceError.FailedToCreateEdition(_) =>

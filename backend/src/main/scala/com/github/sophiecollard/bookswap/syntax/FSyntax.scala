@@ -32,6 +32,14 @@ trait FSyntax {
       }
   }
 
+  implicit class FListOps[F[_], A](private val value: F[List[A]]) {
+    def ifEmpty[B](b: => B)(implicit ev: Functor[F]): F[Option[B]] =
+      value.map {
+        case Nil => Some(b)
+        case _   => None
+      }
+  }
+
 }
 
 object FSyntax extends FSyntax

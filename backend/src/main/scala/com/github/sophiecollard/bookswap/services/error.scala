@@ -35,6 +35,11 @@ object error {
         message = s"Edition [${isbn.value}] already exists."
       )
 
+    final case class EditionStillHasCopiesOnOffer(isbn: ISBN)
+      extends ServiceError(
+        message = s"Edition [${isbn.value}] still has copies with status 'available' or 'reserved'."
+      )
+
     final case class FailedToCreateResource[A](resourceName: String, id: Id[A])
       extends ServiceError(
         message = s"$resourceName [${id.value}] could not be created."

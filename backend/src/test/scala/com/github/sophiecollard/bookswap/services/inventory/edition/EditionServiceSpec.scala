@@ -1,6 +1,6 @@
 package com.github.sophiecollard.bookswap.services.inventory.edition
 
-import java.time.{LocalDate, ZoneId}
+import java.time.{LocalDate, LocalDateTime, ZoneId}
 
 import cats.data.NonEmptyList
 import cats.{~>, Id => CatsId}
@@ -10,9 +10,9 @@ import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory._
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestEditionRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopyRepository, TestEditionRepository}
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
-import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionAlreadyExists, EditionNotFound}
+import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionAlreadyExists, EditionNotFound, EditionStillHasCopiesOnOffer}
 import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -129,11 +129,28 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
         }
       }
     }
+
+    "return an error if the edition still has copies with status 'available'" in new WithCopyAvailable {
+      withSuccessfulAuthorization(editionService.delete(isbn)(adminUserId)) {
+        withServiceError {
+          _ shouldBe EditionStillHasCopiesOnOffer(isbn)
+        }
+      }
+    }
+
+    "return an error if the edition still has copies with status 'reserved'" in new WithCopyReserved {
+      withSuccessfulAuthorization(editionService.delete(isbn)(adminUserId)) {
+        withServiceError {
+          _ shouldBe EditionStillHasCopiesOnOffer(isbn)
+        }
+      }
+    }
   }
 
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
     val editionRepository = new TestEditionRepository
+    val copyRepository = new TestCopyRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
@@ -147,6 +164,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
         authorizationByActiveStatus = instances.byActiveStatus(userRepository),
         authorizationByAdminStatus = instances.byAdminStatus(userRepository),
         editionRepository,
+        copyRepository,
         catsIdTransactor
       )
 
@@ -177,6 +195,32 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
   trait WithEdition extends WithBasicSetup {
     editionRepository.create(edition)
+  }
+
+  trait WithCopyAvailable extends WithEdition {
+    private val copy = Copy(
+      id = Id.generate[Copy],
+      isbn,
+      offeredBy = Id.generate[User],
+      offeredOn = LocalDateTime.of(2020, 3, 12, 0, 0, 0),
+      condition = Condition.Good,
+      status = CopyStatus.Available
+    )
+
+    copyRepository.create(copy)
+  }
+
+  trait WithCopyReserved extends WithEdition {
+    private val copy = Copy(
+      id = Id.generate[Copy],
+      isbn,
+      offeredBy = Id.generate[User],
+      offeredOn = LocalDateTime.of(2020, 3, 13, 0, 0, 0),
+      condition = Condition.BrandNew,
+      status = CopyStatus.Reserved
+    )
+
+    copyRepository.create(copy)
   }
 
 }

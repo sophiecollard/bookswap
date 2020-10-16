@@ -1,12 +1,14 @@
 package com.github.sophiecollard.bookswap.services.inventory.edition
 
+import java.time.ZoneId
+
 import cats.{Monad, ~>}
 import com.github.sophiecollard.bookswap.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.authorization.instances._
-import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetailsUpdate, ISBN}
+import com.github.sophiecollard.bookswap.domain.inventory.{CopyPagination, Edition, EditionDetailsUpdate, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.repositories.inventory.EditionRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.{CopyRepository, EditionRepository}
 import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
@@ -32,8 +34,11 @@ object EditionService {
   def create[F[_], G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
-    repository: EditionRepository[G],
+    editionRepository: EditionRepository[G],
+    copyRepository: CopyRepository[G],
     transactor: G ~> F
+  )(
+    implicit zoneId: ZoneId // TODO pass from configuration
   ): EditionService[F] = new EditionService[F] {
     override def get(isbn: ISBN): F[ServiceErrorOr[Edition]] =
       getWithoutTransaction(isbn)
@@ -42,11 +47,11 @@ object EditionService {
     override def create(edition: Edition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]] =
       authorizationByActiveStatus.authorize(userId) {
         val result = for {
-          _ <- repository
+          _ <- editionRepository
             .get(edition.isbn)
             .emptyOrElse[ServiceError](EditionAlreadyExists(edition.isbn))
             .asEitherT
-          _ <- repository
+          _ <- editionRepository
             .create(edition)
             .ifTrue(())
             .orElse[ServiceError](FailedToCreateEdition(edition.isbn))
@@ -61,7 +66,7 @@ object EditionService {
         val result = for {
           edition <- getWithoutTransaction(isbn).asEitherT
           updatedDetails = edition.details.applyUpdate(detailsUpdate)
-          updatedEdition <- repository
+          updatedEdition <- editionRepository
             .update(isbn, updatedDetails)
             .ifTrue(Edition(isbn, updatedDetails))
             .orElse[ServiceError](FailedToUpdateEdition(isbn))
@@ -72,12 +77,16 @@ object EditionService {
       }
     }
 
-    // TODO Check that there are no open Copy offers for this edition
     override def delete(isbn: ISBN)(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]] =
       authorizationByAdminStatus.authorize(userId) {
         val result = for {
           _ <- getWithoutTransaction(isbn).asEitherT
-          _ <- repository
+          _ <- copyRepository
+            .listForEdition(isbn, CopyPagination.default)
+            .ifEmpty(())
+            .orElse[ServiceError](EditionStillHasCopiesOnOffer(isbn))
+            .asEitherT
+          _ <- editionRepository
             .delete(isbn)
             .ifTrue(())
             .orElse[ServiceError](FailedToDeleteEdition(isbn))
@@ -88,7 +97,7 @@ object EditionService {
       }
 
     private def getWithoutTransaction(isbn: ISBN): G[ServiceErrorOr[Edition]] =
-      repository
+      editionRepository
         .get(isbn)
         .orElse[ServiceError](EditionNotFound(isbn))
   }
