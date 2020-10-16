@@ -32,7 +32,7 @@ object MaybeUpdate {
 
     final override def tryDecode(c: ACursor): Decoder.Result[MaybeUpdate[A]] = c match {
       case c: HCursor =>
-        if (c.value.isNull) Right(noUpdate[A]) // TODO test!
+        if (c.value.isNull) Right(noUpdate[A])
         else strictDecoder[A].tryDecode(c)
       case c: FailedCursor =>
         if (!c.incorrectFocus) Right(noUpdate[A])
@@ -43,7 +43,7 @@ object MaybeUpdate {
 
     final override def tryDecodeAccumulating(c: ACursor): AccumulatingResult[MaybeUpdate[A]] = c match {
       case c: HCursor =>
-        if (c.value.isNull) Valid(noUpdate[A]) // TODO test!
+        if (c.value.isNull) Valid(noUpdate[A])
         else strictDecoder[A].tryDecodeAccumulating(c)
       case c: FailedCursor =>
         if (!c.incorrectFocus) Valid(noUpdate[A])
