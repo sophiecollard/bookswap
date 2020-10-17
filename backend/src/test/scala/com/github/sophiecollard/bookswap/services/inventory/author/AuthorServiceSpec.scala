@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.authorization.instances
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestAuthorRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestAuthorsRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.specsyntax._
@@ -52,7 +52,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
         withNoServiceError { returnedAuthor =>
           returnedAuthor.name shouldBe authorName
 
-          withSome(authorRepository.get(returnedAuthor.id)) { createdAuthor =>
+          withSome(authorsRepository.get(returnedAuthor.id)) { createdAuthor =>
             createdAuthor shouldBe returnedAuthor
           }
         }
@@ -70,7 +70,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
     "delete an author" in new WithAuthor {
       withSuccessfulAuthorization(authorService.delete(authorId)(adminUserId)) {
         withNoServiceError { _ =>
-          withNone(authorRepository.get(authorId)) {
+          withNone(authorsRepository.get(authorId)) {
             succeed
           }
         }
@@ -88,7 +88,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
 
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
-    val authorRepository = new TestAuthorRepository
+    val authorsRepository = new TestAuthorsRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
@@ -101,7 +101,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
       AuthorService.create(
         authorizationByActiveStatus = instances.byActiveStatus(userRepository),
         authorizationByAdminStatus = instances.byAdminStatus(userRepository),
-        authorRepository,
+        authorsRepository,
         catsIdTransactor
       )
 
@@ -116,7 +116,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithAuthor extends WithBasicSetup {
-    authorRepository.create(author)
+    authorsRepository.create(author)
   }
 
 }

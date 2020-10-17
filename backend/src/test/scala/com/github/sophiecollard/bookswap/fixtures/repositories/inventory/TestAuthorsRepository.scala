@@ -3,9 +3,9 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.inventory
 import cats.{Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.Id
-import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.AuthorsRepository
 
-class TestAuthorRepository extends AuthorRepository[CatsId] {
+class TestAuthorsRepository extends AuthorsRepository[CatsId] {
 
   override def get(id: Id[Author]): CatsId[Option[Author]] =
     store.get(id)

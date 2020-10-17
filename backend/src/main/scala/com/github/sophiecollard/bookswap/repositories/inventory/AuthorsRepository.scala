@@ -5,7 +5,7 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import doobie.{ConnectionIO, Query0, Update0, Update}
 import doobie.implicits._
 
-trait AuthorRepository[F[_]] {
+trait AuthorsRepository[F[_]] {
 
   /** Returns the specified Author */
   def get(id: Id[Author]): F[Option[Author]]
@@ -18,9 +18,9 @@ trait AuthorRepository[F[_]] {
 
 }
 
-object AuthorRepository {
+object AuthorsRepository {
 
-  def create: AuthorRepository[ConnectionIO] = new AuthorRepository[ConnectionIO] {
+  def create: AuthorsRepository[ConnectionIO] = new AuthorsRepository[ConnectionIO] {
     override def get(id: Id[Author]): ConnectionIO[Option[Author]] =
       getQuery(id)
         .option

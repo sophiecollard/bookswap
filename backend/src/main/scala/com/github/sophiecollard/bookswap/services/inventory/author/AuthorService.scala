@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.repositories.inventory.AuthorRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.AuthorsRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, ResourceNotFound}
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
@@ -29,7 +29,7 @@ object AuthorService {
   def create[F[_], G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
-    repository: AuthorRepository[G],
+    repository: AuthorsRepository[G],
     transactor: G ~> F
   ): AuthorService[F] =
     new AuthorService[F] {
