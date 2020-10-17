@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.inventory.author
+package com.github.sophiecollard.bookswap.api.inventory.authors
 
 import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain.inventory.Author

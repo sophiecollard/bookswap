@@ -1,6 +1,6 @@
-package com.github.sophiecollard.bookswap.api.transaction.copyrequest
+package com.github.sophiecollard.bookswap.api.transaction.copyrequests
 
-import com.github.sophiecollard.bookswap.api.inventory.copy.CopyResponseBody
+import com.github.sophiecollard.bookswap.api.inventory.copies.CopyResponseBody
 import com.github.sophiecollard.bookswap.api.syntax.ConverterSyntax
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest

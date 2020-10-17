@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.inventory.copy
+package com.github.sophiecollard.bookswap.api.inventory.copies
 
 import java.time.LocalDateTime
 

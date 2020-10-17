@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.inventory.edition
+package com.github.sophiecollard.bookswap.api.inventory.editions
 
 import cats.effect.Sync
 import cats.implicits._

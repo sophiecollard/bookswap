@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.inventory.copy
+package com.github.sophiecollard.bookswap.api.inventory.copies
 
 import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain.inventory.Condition

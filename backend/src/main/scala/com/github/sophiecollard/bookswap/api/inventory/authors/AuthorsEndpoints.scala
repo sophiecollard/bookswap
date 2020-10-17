@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.inventory.author
+package com.github.sophiecollard.bookswap.api.inventory.authors
 
 import cats.effect.Sync
 import cats.implicits._

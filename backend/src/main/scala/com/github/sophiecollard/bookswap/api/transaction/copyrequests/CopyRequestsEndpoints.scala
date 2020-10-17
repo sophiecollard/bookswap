@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.transaction.copyrequest
+package com.github.sophiecollard.bookswap.api.transaction.copyrequests
 
 import java.time.{LocalDateTime, ZoneId}
 

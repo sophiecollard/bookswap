@@ -1,4 +1,4 @@
-package com.github.sophiecollard.bookswap.api.transaction.copyrequest
+package com.github.sophiecollard.bookswap.api.transaction.copyrequests
 
 import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain.inventory.Copy
