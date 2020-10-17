@@ -3,9 +3,9 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.user
 import cats.{Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.repositories.user.UserRepository
+import com.github.sophiecollard.bookswap.repositories.user.UsersRepository
 
-class TestUserRepository extends UserRepository[CatsId] {
+class TestUsersRepository extends UsersRepository[CatsId] {
 
   override def create(user: User): CatsId[Boolean] =
     store.get(user.id) match {

@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.domain.user.UserStatus.{Active, Admin}
-import com.github.sophiecollard.bookswap.repositories.user.UserRepository
+import com.github.sophiecollard.bookswap.repositories.user.UsersRepository
 
 object instances {
 
@@ -15,10 +15,10 @@ object instances {
   type WithAuthorizationByActiveStatus[R] = WithAuthorization[R, ByActiveStatus]
 
   def byActiveStatus[F[_] : Monad](
-    userRepository: UserRepository[F]
+    usersRepository: UsersRepository[F]
   ): AuthorizationService[F, Id[User], ByActiveStatus] =
     AuthorizationService.create[F, Id[User], ByActiveStatus] { userId =>
-      userRepository.get(userId).map {
+      usersRepository.get(userId).map {
         case Some(User(_, _, Active) | User(_, _, Admin)) =>
           Right(())
         case _ =>
@@ -31,10 +31,10 @@ object instances {
   type WithAuthorizationByAdminStatus[R] = WithAuthorization[R, ByAdminStatus]
 
   def byAdminStatus[F[_] : Monad](
-    userRepository: UserRepository[F]
+    usersRepository: UsersRepository[F]
   ): AuthorizationService[F, Id[User], ByAdminStatus] =
     AuthorizationService.create[F, Id[User], ByAdminStatus] { userId =>
-      userRepository.get(userId).map {
+      usersRepository.get(userId).map {
         case Some(User(_, _, Admin)) =>
           Right(())
         case _ =>

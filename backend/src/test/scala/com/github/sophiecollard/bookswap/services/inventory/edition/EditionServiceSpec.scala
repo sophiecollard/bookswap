@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.domain.shared.MaybeUpdate.{NoUpdate, Up
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopiesRepository, TestEditionsRepository}
-import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUsersRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionAlreadyExists, EditionNotFound, EditionStillHasCopiesOnOffer}
 import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
@@ -148,7 +148,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val userRepository = new TestUserRepository
+    val usersRepository = new TestUsersRepository
     val editionsRepository = new TestEditionsRepository
     val copiesRepository = new TestCopiesRepository
 
@@ -161,8 +161,8 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
     val editionService: EditionService[CatsId] =
       EditionService.create(
-        authorizationByActiveStatus = instances.byActiveStatus(userRepository),
-        authorizationByAdminStatus = instances.byAdminStatus(userRepository),
+        authorizationByActiveStatus = instances.byActiveStatus(usersRepository),
+        authorizationByAdminStatus = instances.byAdminStatus(usersRepository),
         editionsRepository,
         copiesRepository,
         catsIdTransactor
@@ -172,10 +172,10 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     val (unverifiedUserId, bannedUserId) = (Id.generate[User], Id.generate[User])
     val (isbn, otherIsbn) = (ISBN.unsafeApply("9781784875435"), ISBN.unsafeApply("9780007232161"))
 
-    userRepository.create(User(id = activeUserId, name = Name("ActiveUser"), status = UserStatus.Active))
-    userRepository.create(User(id = adminUserId, name = Name("AdminUser"), status = UserStatus.Admin))
-    userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
-    userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
+    usersRepository.create(User(id = activeUserId, name = Name("ActiveUser"), status = UserStatus.Active))
+    usersRepository.create(User(id = adminUserId, name = Name("AdminUser"), status = UserStatus.Admin))
+    usersRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
+    usersRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
 
     val edition = Edition(
       isbn,

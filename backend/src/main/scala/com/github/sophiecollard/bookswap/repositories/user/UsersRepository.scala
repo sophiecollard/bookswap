@@ -5,7 +5,7 @@ import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import doobie.{ConnectionIO, Query0, Update, Update0}
 import doobie.implicits._
 
-trait UserRepository[F[_]] {
+trait UsersRepository[F[_]] {
 
   def create(user: User): F[Boolean]
 
@@ -19,9 +19,9 @@ trait UserRepository[F[_]] {
 
 }
 
-object UserRepository {
+object UsersRepository {
 
-  def create: UserRepository[ConnectionIO] = new UserRepository[ConnectionIO] {
+  def create: UsersRepository[ConnectionIO] = new UsersRepository[ConnectionIO] {
     override def create(user: User): ConnectionIO[Boolean] =
       createUpdate
         .run(user)

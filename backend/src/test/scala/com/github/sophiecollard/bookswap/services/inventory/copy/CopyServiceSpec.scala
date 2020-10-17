@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, Reques
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopiesRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestsRepository
-import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUsersRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.specsyntax._
 import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
@@ -84,8 +84,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
       val (unverifiedUserId, bannedUserId) = (Id.generate[User], Id.generate[User])
 
-      userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
-      userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
+      usersRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
+      usersRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
 
       withFailedAuthorization(copyService.create(copy.isbn, copy.condition)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
@@ -186,7 +186,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val userRepository = new TestUserRepository
+    val usersRepository = new TestUsersRepository
     val copiesRepository = new TestCopiesRepository
     val copyRequestsRepository = new TestCopyRequestsRepository
 
@@ -199,7 +199,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
     val copyService: CopyService[CatsId] =
       CopyService.create(
-        authorizationByActiveStatus = byActiveStatus(userRepository),
+        authorizationByActiveStatus = byActiveStatus(usersRepository),
         authorizationByCopyOwner = authorization.byCopyOwner(copiesRepository),
         copiesRepository,
         copyRequestsRepository,
@@ -210,7 +210,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     val (copyId, requestId) = (Id.generate[Copy], Id.generate[CopyRequest])
     val (initialCopyStatus, initialRequestStatus) = (CopyStatus.available, RequestStatus.pending)
 
-    userRepository.create(User(id = copyOwnerId, name = Name("CopyOwner"), status = UserStatus.Active))
+    usersRepository.create(User(id = copyOwnerId, name = Name("CopyOwner"), status = UserStatus.Active))
 
     val copy = Copy(
       id = copyId,

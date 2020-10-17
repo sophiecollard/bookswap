@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestAuthorsRepository
-import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUsersRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
@@ -35,8 +35,8 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
     "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
       val (unverifiedUserId, bannedUserId) = (Id.generate[User], Id.generate[User])
 
-      userRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
-      userRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
+      usersRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
+      usersRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
 
       withFailedAuthorization(authorService.create(authorName)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
@@ -87,7 +87,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val userRepository = new TestUserRepository
+    val usersRepository = new TestUsersRepository
     val authorsRepository = new TestAuthorsRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
@@ -99,8 +99,8 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
 
     val authorService: AuthorService[CatsId] =
       AuthorService.create(
-        authorizationByActiveStatus = instances.byActiveStatus(userRepository),
-        authorizationByAdminStatus = instances.byAdminStatus(userRepository),
+        authorizationByActiveStatus = instances.byActiveStatus(usersRepository),
+        authorizationByAdminStatus = instances.byAdminStatus(usersRepository),
         authorsRepository,
         catsIdTransactor
       )
@@ -108,8 +108,8 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
     val (authorId, otherAuthorId) = (Id.generate[Author], Id.generate[Author])
     val (activeUserId, adminUserId) = (Id.generate[User], Id.generate[User])
 
-    userRepository.create(User(id = activeUserId, name = Name("ActiveUser"), status = UserStatus.Active))
-    userRepository.create(User(id = adminUserId, name = Name("AdminUser"), status = UserStatus.Admin))
+    usersRepository.create(User(id = activeUserId, name = Name("ActiveUser"), status = UserStatus.Active))
+    usersRepository.create(User(id = adminUserId, name = Name("AdminUser"), status = UserStatus.Admin))
 
     val authorName = Name[Author]("China Miéville")
     val author = Author(authorId, authorName)

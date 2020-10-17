@@ -5,7 +5,7 @@ import com.github.sophiecollard.bookswap.authorization.AuthorizationService
 import com.github.sophiecollard.bookswap.authorization.instances.{ByAdminStatus, WithAuthorizationByAdminStatus}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.repositories.user.UserRepository
+import com.github.sophiecollard.bookswap.repositories.user.UsersRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToCreateResource, FailedToDeleteResource, FailedToUpdateResource, ResourceNotFound, UserNameAlreadyTaken}
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
@@ -30,7 +30,7 @@ object UserService {
 
   def create[F[_], G[_]: Monad](
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
-    userRepository: UserRepository[G],
+    usersRepository: UsersRepository[G],
     transactor: G ~> F
   ): UserService[F] = new UserService[F] {
     override def get(id: Id[User]): F[ServiceErrorOr[User]] =
@@ -41,11 +41,11 @@ object UserService {
       val user = User(id = Id.generate[User], name, status = UserStatus.PendingVerification)
 
       val result = for {
-        _ <- userRepository
+        _ <- usersRepository
           .getByName(name)
           .emptyOrElse[ServiceError](UserNameAlreadyTaken(name))
           .asEitherT
-        _ <- userRepository
+        _ <- usersRepository
           .create(user)
           .ifTrue(user)
           .orElse[ServiceError](FailedToCreateResource("User", user.id))
@@ -59,7 +59,7 @@ object UserService {
       authorizationByAdminStatus.authorize(userId) {
         val result = for {
           _ <- getWithoutTransaction(id).asEitherT
-          _ <- userRepository
+          _ <- usersRepository
             .updateStatus(id, status)
             .ifTrue(())
             .orElse[ServiceError](FailedToUpdateResource("User", id))
@@ -73,7 +73,7 @@ object UserService {
     override def delete(userId: Id[User]): F[ServiceErrorOr[Unit]] = {
       val result = for {
         _ <- getWithoutTransaction(userId).asEitherT
-        _ <- userRepository
+        _ <- usersRepository
           .delete(userId)
           .ifTrue(())
           .orElse[ServiceError](FailedToDeleteResource("User", userId))
@@ -84,7 +84,7 @@ object UserService {
     }
 
     private def getWithoutTransaction(id: Id[User]): G[ServiceErrorOr[User]] =
-      userRepository
+      usersRepository
         .get(id)
         .orElse[ServiceError](ResourceNotFound("User", id))
   }
