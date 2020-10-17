@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.shared.{Id, Name, PageSize}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
 import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopiesRepository
-import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestsRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
 import com.github.sophiecollard.bookswap.specsyntax._
@@ -93,7 +93,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
           assert(returnedRequest.requestedBy == requestIssuerId)
           assert(returnedRequest.status == initialRequestStatus)
 
-          withSome(copyRequestRepository.get(returnedRequest.id)) { createdRequest =>
+          withSome(copyRequestsRepository.get(returnedRequest.id)) { createdRequest =>
             assert(createdRequest.copyId == copyId)
             assert(createdRequest.requestedBy == requestIssuerId)
             assert(createdRequest.status == initialRequestStatus)
@@ -469,7 +469,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
     val copiesRepository = new TestCopiesRepository
-    val copyRequestRepository = new TestCopyRequestRepository
+    val copyRequestsRepository = new TestCopyRequestsRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
@@ -481,9 +481,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     val copyRequestService: CopyRequestService[CatsId] =
       CopyRequestService.create(
         authorizationByActiveStatus = instances.byActiveStatus(userRepository),
-        authorizationByRequestIssuer = authorization.byRequestIssuer(copyRequestRepository),
-        authorizationByCopyOwner = authorization.byCopyOwner(copyRequestRepository, copiesRepository),
-        copyRequestRepository,
+        authorizationByRequestIssuer = authorization.byRequestIssuer(copyRequestsRepository),
+        authorizationByCopyOwner = authorization.byCopyOwner(copyRequestsRepository, copiesRepository),
+        copyRequestsRepository,
         copiesRepository,
         catsIdTransactor
       )
@@ -535,62 +535,62 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       copiesRepository.get(id).exists(_.status == initialCopyStatus)
 
     def requestIsAccepted(id: Id[CopyRequest]): Boolean =
-      copyRequestRepository.get(id).exists(_.status.isAccepted)
+      copyRequestsRepository.get(id).exists(_.status.isAccepted)
 
     def requestIsOnWaitingList(id: Id[CopyRequest]): Boolean =
-      copyRequestRepository.get(id).exists(_.status.isOnWaitingList)
+      copyRequestsRepository.get(id).exists(_.status.isOnWaitingList)
 
     def requestIsRejected(id: Id[CopyRequest]): Boolean =
-      copyRequestRepository.get(id).exists(_.status.isRejected)
+      copyRequestsRepository.get(id).exists(_.status.isRejected)
 
     def requestIsFulfilled(id: Id[CopyRequest]): Boolean =
-      copyRequestRepository.get(id).exists(_.status.isFulfilled)
+      copyRequestsRepository.get(id).exists(_.status.isFulfilled)
 
     def requestIsCancelled(id: Id[CopyRequest]): Boolean =
-      copyRequestRepository.get(id).exists(_.status.isCancelled)
+      copyRequestsRepository.get(id).exists(_.status.isCancelled)
 
     def requestIsNotUpdated(id: Id[CopyRequest], initialRequestStatus: RequestStatus): Boolean =
-      copyRequestRepository.get(id).exists(_.status == initialRequestStatus)
+      copyRequestsRepository.get(id).exists(_.status == initialRequestStatus)
   }
 
   trait WithRequestPending extends WithBasicSetup {
-    copyRequestRepository.create(copyRequest)
-    copyRequestRepository.create(nextCopyRequest)
+    copyRequestsRepository.create(copyRequest)
+    copyRequestsRepository.create(nextCopyRequest)
   }
 
   trait WithRequestAccepted extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.accepted(now)
     override val initialCopyStatus = CopyStatus.reserved
-    copyRequestRepository.updateStatus(requestId, initialRequestStatus)
+    copyRequestsRepository.updateStatus(requestId, initialRequestStatus)
     copiesRepository.updateStatus(copyId, initialCopyStatus)
   }
 
   trait WithNextRequestOnWaitingList extends WithRequestAccepted {
     override val initialNextRequestStatus = RequestStatus.onWaitingList(now)
-    copyRequestRepository.updateStatus(nextRequestId, initialNextRequestStatus)
+    copyRequestsRepository.updateStatus(nextRequestId, initialNextRequestStatus)
   }
 
   trait WithRequestOnWaitingList extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.onWaitingList(now)
     override val initialCopyStatus = CopyStatus.reserved
-    copyRequestRepository.updateStatus(requestId, initialRequestStatus)
+    copyRequestsRepository.updateStatus(requestId, initialRequestStatus)
     copiesRepository.updateStatus(copyId, initialCopyStatus)
   }
 
   trait WithRequestRejected extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.rejected(now)
-    copyRequestRepository.updateStatus(requestId, initialRequestStatus)
+    copyRequestsRepository.updateStatus(requestId, initialRequestStatus)
   }
 
   trait WithRequestCancelled extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.cancelled(now)
-    copyRequestRepository.updateStatus(requestId, initialRequestStatus)
+    copyRequestsRepository.updateStatus(requestId, initialRequestStatus)
   }
 
   trait WithRequestFulfilled extends WithRequestPending {
     override val initialRequestStatus = RequestStatus.fulfilled(now)
     override val initialCopyStatus = CopyStatus.Swapped
-    copyRequestRepository.updateStatus(requestId, initialRequestStatus)
+    copyRequestsRepository.updateStatus(requestId, initialRequestStatus)
     copiesRepository.updateStatus(copyId, initialCopyStatus)
   }
 

@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopiesRepository
-import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
+import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestsRepository
 import com.github.sophiecollard.bookswap.syntax.OptionTSyntax.FOpToOptionT
 
 object authorization {
@@ -22,12 +22,12 @@ object authorization {
   type Input = (Id[User], Id[CopyRequest])
 
   def byCopyOwner[F[_]: Monad](
-    copyRequestRepository: CopyRequestRepository[F],
+    copyRequestsRepository: CopyRequestsRepository[F],
     copiesRepository: CopiesRepository[F]
   ): AuthorizationService[F, Input, ByCopyOwner] =
     AuthorizationService.create { case (userId, copyRequestId) =>
       val maybeCopyOwnerId = for {
-        copyRequest <- copyRequestRepository.get(copyRequestId).asOptionT
+        copyRequest <- copyRequestsRepository.get(copyRequestId).asOptionT
         copy <- copiesRepository.get(copyRequest.copyId).asOptionT
       } yield copy.offeredBy
 
@@ -40,10 +40,10 @@ object authorization {
     }
 
   def byRequestIssuer[F[_]: Monad](
-    copyRequestRepository: CopyRequestRepository[F]
+    copyRequestsRepository: CopyRequestsRepository[F]
   ): AuthorizationService[F, Input, ByRequestIssuer] =
     AuthorizationService.create { case (userId, copyRequestId) =>
-      copyRequestRepository.get(copyRequestId).map {
+      copyRequestsRepository.get(copyRequestId).map {
         case Some(copyRequest) if copyRequest.requestedBy == userId =>
           Right(())
         case _ =>

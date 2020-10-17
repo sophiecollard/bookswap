@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.repositories.inventory.CopiesRepository
-import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
+import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestsRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.services.inventory.copy.authorization._
@@ -47,7 +47,7 @@ object CopyService {
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByCopyOwner: AuthorizationService[F, (Id[User], Id[Copy]), ByCopyOwner],
     copiesRepository: CopiesRepository[G],
-    copyRequestRepository: CopyRequestRepository[G],
+    copyRequestsRepository: CopyRequestsRepository[G],
     transactor: G ~> F
   )(
     implicit zoneId: ZoneId
@@ -124,9 +124,9 @@ object CopyService {
     ): G[ServiceErrorOr[CopyStatus]] =
       stateUpdate match {
         case UpdateCopyAndOpenRequestsStatuses(copyStatus, openRequestsStatus) =>
-          copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
-            copyRequestRepository.updateAcceptedRequestsStatuses(copyId, openRequestsStatus) >>
-            copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
+          copyRequestsRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
+            copyRequestsRepository.updateAcceptedRequestsStatuses(copyId, openRequestsStatus) >>
+            copyRequestsRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
             copiesRepository.updateStatus(copyId, Withdrawn) ifTrue
             copyStatus orElse[ServiceError]
             FailedToUpdateResource("Copy", copyId)

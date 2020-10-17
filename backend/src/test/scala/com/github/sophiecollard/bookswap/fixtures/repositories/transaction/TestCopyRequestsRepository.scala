@@ -10,9 +10,9 @@ import com.github.sophiecollard.bookswap.domain.transaction.RequestStatus.{Accep
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.fixtures.instances.javatime._
-import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
+import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestsRepository
 
-class TestCopyRequestRepository extends CopyRequestRepository[CatsId] {
+class TestCopyRequestsRepository extends CopyRequestsRepository[CatsId] {
 
   override def create(copyRequest: CopyRequest): CatsId[Boolean] = {
     store.get(copyRequest.id) match {
