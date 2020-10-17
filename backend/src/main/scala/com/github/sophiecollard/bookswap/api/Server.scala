@@ -10,7 +10,7 @@ import org.http4s.{Http, HttpRoutes}
 
 import scala.concurrent.duration._
 
-object server {
+object Server {
 
   def create[F[_]: ConcurrentEffect](
     authorEndpoints: HttpRoutes[F],

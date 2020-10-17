@@ -17,7 +17,7 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.impl.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
 import org.http4s.server.AuthMiddleware
 
-object endpoints {
+object CopiesEndpoints {
 
   def create[F[_]](
     authMiddleware: AuthMiddleware[F, Id[User]],
