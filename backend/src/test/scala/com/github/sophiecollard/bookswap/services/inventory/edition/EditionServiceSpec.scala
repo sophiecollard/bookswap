@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.inventory._
 import com.github.sophiecollard.bookswap.domain.shared.MaybeUpdate.{NoUpdate, Update}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopiesRepository, TestEditionRepository}
+import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopiesRepository, TestEditionsRepository}
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionAlreadyExists, EditionNotFound, EditionStillHasCopiesOnOffer}
 import com.github.sophiecollard.bookswap.specsyntax._
@@ -49,7 +49,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
         withNoServiceError { returnedEdition =>
           returnedEdition shouldBe edition
 
-          withSome(editionRepository.get(isbn)) { createdEdition =>
+          withSome(editionsRepository.get(isbn)) { createdEdition =>
             createdEdition shouldBe edition
           }
         }
@@ -86,7 +86,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
           assert(returnedEdition.publisherId == expectedResult.publisherId)
           assert(returnedEdition.publicationDate == expectedResult.publicationDate)
 
-          withSome(editionRepository.get(isbn)) { updatedEdition =>
+          withSome(editionsRepository.get(isbn)) { updatedEdition =>
             assert(updatedEdition.title == expectedResult.title)
             assert(updatedEdition.authorIds == expectedResult.authorIds)
             assert(updatedEdition.publisherId == expectedResult.publisherId)
@@ -115,7 +115,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     "delete an edition" in new WithEdition {
       withSuccessfulAuthorization(editionService.delete(isbn)(adminUserId)) {
         withNoServiceError { _ =>
-          withNone(editionRepository.get(isbn)) {
+          withNone(editionsRepository.get(isbn)) {
             succeed
           }
         }
@@ -149,7 +149,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
-    val editionRepository = new TestEditionRepository
+    val editionsRepository = new TestEditionsRepository
     val copiesRepository = new TestCopiesRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
@@ -163,7 +163,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
       EditionService.create(
         authorizationByActiveStatus = instances.byActiveStatus(userRepository),
         authorizationByAdminStatus = instances.byAdminStatus(userRepository),
-        editionRepository,
+        editionsRepository,
         copiesRepository,
         catsIdTransactor
       )
@@ -194,7 +194,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithEdition extends WithBasicSetup {
-    editionRepository.create(edition)
+    editionsRepository.create(edition)
   }
 
   trait WithCopyAvailable extends WithEdition {

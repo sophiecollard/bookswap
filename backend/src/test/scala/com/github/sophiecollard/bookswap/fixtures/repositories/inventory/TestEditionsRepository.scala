@@ -2,9 +2,9 @@ package com.github.sophiecollard.bookswap.fixtures.repositories.inventory
 
 import cats.{Id => CatsId}
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetails, ISBN}
-import com.github.sophiecollard.bookswap.repositories.inventory.EditionRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.EditionsRepository
 
-class TestEditionRepository extends EditionRepository[CatsId] {
+class TestEditionsRepository extends EditionsRepository[CatsId] {
 
   override def create(edition: Edition): CatsId[Boolean] =
     store.get(edition.isbn) match {

@@ -6,7 +6,7 @@ import doobie.implicits._
 import doobie.implicits.javatime._
 import doobie.{ConnectionIO, Query0, Update, Update0}
 
-trait EditionRepository[F[_]] {
+trait EditionsRepository[F[_]] {
 
   /** Creates a new Edition */
   def create(edition: Edition): F[Boolean]
@@ -22,9 +22,9 @@ trait EditionRepository[F[_]] {
 
 }
 
-object EditionRepository {
+object EditionsRepository {
 
-  def create: EditionRepository[ConnectionIO] = new EditionRepository[ConnectionIO] {
+  def create: EditionsRepository[ConnectionIO] = new EditionsRepository[ConnectionIO] {
     override def create(edition: Edition): ConnectionIO[Boolean] =
       createUpdate
         .run(edition)

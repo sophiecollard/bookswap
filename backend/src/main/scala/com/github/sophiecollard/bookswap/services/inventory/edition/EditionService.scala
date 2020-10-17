@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.{CopyPagination, Edition, EditionDetailsUpdate, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.repositories.inventory.{CopiesRepository, EditionRepository}
+import com.github.sophiecollard.bookswap.repositories.inventory.{CopiesRepository, EditionsRepository}
 import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
@@ -34,7 +34,7 @@ object EditionService {
   def create[F[_], G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
-    editionRepository: EditionRepository[G],
+    editionsRepository: EditionsRepository[G],
     copiesRepository: CopiesRepository[G],
     transactor: G ~> F
   )(
@@ -47,11 +47,11 @@ object EditionService {
     override def create(edition: Edition)(userId: Id[User]): F[WithAuthorizationByActiveStatus[ServiceErrorOr[Edition]]] =
       authorizationByActiveStatus.authorize(userId) {
         val result = for {
-          _ <- editionRepository
+          _ <- editionsRepository
             .get(edition.isbn)
             .emptyOrElse[ServiceError](EditionAlreadyExists(edition.isbn))
             .asEitherT
-          _ <- editionRepository
+          _ <- editionsRepository
             .create(edition)
             .ifTrue(())
             .orElse[ServiceError](FailedToCreateEdition(edition.isbn))
@@ -66,7 +66,7 @@ object EditionService {
         val result = for {
           edition <- getWithoutTransaction(isbn).asEitherT
           updatedDetails = edition.details.applyUpdate(detailsUpdate)
-          updatedEdition <- editionRepository
+          updatedEdition <- editionsRepository
             .update(isbn, updatedDetails)
             .ifTrue(Edition(isbn, updatedDetails))
             .orElse[ServiceError](FailedToUpdateEdition(isbn))
@@ -86,7 +86,7 @@ object EditionService {
             .ifEmpty(())
             .orElse[ServiceError](EditionStillHasCopiesOnOffer(isbn))
             .asEitherT
-          _ <- editionRepository
+          _ <- editionsRepository
             .delete(isbn)
             .ifTrue(())
             .orElse[ServiceError](FailedToDeleteEdition(isbn))
@@ -97,7 +97,7 @@ object EditionService {
       }
 
     private def getWithoutTransaction(isbn: ISBN): G[ServiceErrorOr[Edition]] =
-      editionRepository
+      editionsRepository
         .get(isbn)
         .orElse[ServiceError](EditionNotFound(isbn))
   }
