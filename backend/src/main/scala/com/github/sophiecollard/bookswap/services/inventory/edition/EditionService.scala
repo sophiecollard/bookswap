@@ -8,7 +8,7 @@ import com.github.sophiecollard.bookswap.authorization.instances._
 import com.github.sophiecollard.bookswap.domain.inventory.{CopyPagination, Edition, EditionDetailsUpdate, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.repositories.inventory.{CopyRepository, EditionRepository}
+import com.github.sophiecollard.bookswap.repositories.inventory.{CopiesRepository, EditionRepository}
 import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
@@ -35,7 +35,7 @@ object EditionService {
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
     editionRepository: EditionRepository[G],
-    copyRepository: CopyRepository[G],
+    copiesRepository: CopiesRepository[G],
     transactor: G ~> F
   )(
     implicit zoneId: ZoneId // TODO pass from configuration
@@ -81,7 +81,7 @@ object EditionService {
       authorizationByAdminStatus.authorize(userId) {
         val result = for {
           _ <- getWithoutTransaction(isbn).asEitherT
-          _ <- copyRepository
+          _ <- copiesRepository
             .listForEdition(isbn, CopyPagination.default)
             .ifEmpty(())
             .orElse[ServiceError](EditionStillHasCopiesOnOffer(isbn))

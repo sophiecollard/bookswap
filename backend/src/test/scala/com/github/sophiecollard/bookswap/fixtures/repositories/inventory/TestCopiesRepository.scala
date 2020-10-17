@@ -8,9 +8,9 @@ import com.github.sophiecollard.bookswap.domain.inventory._
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.fixtures.instances.javatime._
-import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.CopiesRepository
 
-class TestCopyRepository extends CopyRepository[CatsId] {
+class TestCopiesRepository extends CopiesRepository[CatsId] {
 
   override def create(copy: Copy): CatsId[Boolean] = {
     store.get(copy.id) match {

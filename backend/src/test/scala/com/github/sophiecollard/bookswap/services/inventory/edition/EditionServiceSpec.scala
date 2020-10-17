@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.inventory._
 import com.github.sophiecollard.bookswap.domain.shared.MaybeUpdate.{NoUpdate, Update}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopyRepository, TestEditionRepository}
+import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.{TestCopiesRepository, TestEditionRepository}
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.{EditionAlreadyExists, EditionNotFound, EditionStillHasCopiesOnOffer}
 import com.github.sophiecollard.bookswap.specsyntax._
@@ -150,7 +150,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
     val editionRepository = new TestEditionRepository
-    val copyRepository = new TestCopyRepository
+    val copiesRepository = new TestCopiesRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
@@ -164,7 +164,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
         authorizationByActiveStatus = instances.byActiveStatus(userRepository),
         authorizationByAdminStatus = instances.byAdminStatus(userRepository),
         editionRepository,
-        copyRepository,
+        copiesRepository,
         catsIdTransactor
       )
 
@@ -207,7 +207,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
       status = CopyStatus.Available
     )
 
-    copyRepository.create(copy)
+    copiesRepository.create(copy)
   }
 
   trait WithCopyReserved extends WithEdition {
@@ -220,7 +220,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
       status = CopyStatus.Reserved
     )
 
-    copyRepository.create(copy)
+    copiesRepository.create(copy)
   }
 
 }

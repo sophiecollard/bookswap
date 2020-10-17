@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.CopyStatus.{Available,
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyPagination, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.CopiesRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
@@ -46,7 +46,7 @@ object CopyService {
   def create[F[_]: Monad, G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByCopyOwner: AuthorizationService[F, (Id[User], Id[Copy]), ByCopyOwner],
-    copyRepository: CopyRepository[G],
+    copiesRepository: CopiesRepository[G],
     copyRequestRepository: CopyRequestRepository[G],
     transactor: G ~> F
   )(
@@ -57,12 +57,12 @@ object CopyService {
         .transact(transactor)
 
     override def listForEdition(isbn: ISBN, pagination: CopyPagination): F[List[Copy]] =
-      copyRepository
+      copiesRepository
         .listForEdition(isbn, pagination)
         .transact(transactor)
 
     override def listForOwner(offeredBy: Id[User], pagination: CopyPagination): F[List[Copy]] =
-      copyRepository
+      copiesRepository
         .listForOwner(offeredBy, pagination)
         .transact(transactor)
 
@@ -77,7 +77,7 @@ object CopyService {
           status = Available
         )
 
-        copyRepository
+        copiesRepository
           .create(copy)
           .ifTrue(copy)
           .orElse[ServiceError](FailedToCreateResource("Copy", copy.id))
@@ -88,7 +88,7 @@ object CopyService {
       authorizationByCopyOwner.authorize((userId, id)) {
         val result = for {
           copy <- getWithoutTransaction(id).asEitherT
-          updatedCopy <- copyRepository
+          updatedCopy <- copiesRepository
             .updateCondition(id, condition)
             .ifTrue(copy.copy(condition = condition))
             .orElse[ServiceError](FailedToUpdateResource("Copy", id))
@@ -112,7 +112,7 @@ object CopyService {
       }
 
     private def getWithoutTransaction(id: Id[Copy]): G[ServiceErrorOr[Copy]] =
-      copyRepository
+      copiesRepository
         .get(id)
         .orElse[ServiceError](ResourceNotFound("Copy", id))
 
@@ -127,7 +127,7 @@ object CopyService {
           copyRequestRepository.updatePendingRequestsStatuses(copyId, openRequestsStatus) >>
             copyRequestRepository.updateAcceptedRequestsStatuses(copyId, openRequestsStatus) >>
             copyRequestRepository.updateWaitingListRequestsStatuses(copyId, openRequestsStatus) >>
-            copyRepository.updateStatus(copyId, Withdrawn) ifTrue
+            copiesRepository.updateStatus(copyId, Withdrawn) ifTrue
             copyStatus orElse[ServiceError]
             FailedToUpdateResource("Copy", copyId)
         case NoUpdate =>

@@ -7,7 +7,7 @@ import doobie.implicits._
 import doobie.implicits.javatime._
 import doobie.{ConnectionIO, Query0, Update, Update0}
 
-trait CopyRepository[F[_]] {
+trait CopiesRepository[F[_]] {
 
   /** Creates a new Copy */
   def create(copy: Copy): F[Boolean]
@@ -29,9 +29,9 @@ trait CopyRepository[F[_]] {
 
 }
 
-object CopyRepository {
+object CopiesRepository {
 
-  def create: CopyRepository[ConnectionIO] = new CopyRepository[ConnectionIO] {
+  def create: CopiesRepository[ConnectionIO] = new CopiesRepository[ConnectionIO] {
     override def create(copy: Copy): ConnectionIO[Boolean] =
       createUpdate
         .run(copy)

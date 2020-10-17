@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.authorization.{AuthorizationService, Wi
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.repositories.inventory.CopyRepository
+import com.github.sophiecollard.bookswap.repositories.inventory.CopiesRepository
 import com.github.sophiecollard.bookswap.repositories.transaction.CopyRequestRepository
 import com.github.sophiecollard.bookswap.syntax.OptionTSyntax.FOpToOptionT
 
@@ -23,12 +23,12 @@ object authorization {
 
   def byCopyOwner[F[_]: Monad](
     copyRequestRepository: CopyRequestRepository[F],
-    copyRepository: CopyRepository[F]
+    copiesRepository: CopiesRepository[F]
   ): AuthorizationService[F, Input, ByCopyOwner] =
     AuthorizationService.create { case (userId, copyRequestId) =>
       val maybeCopyOwnerId = for {
         copyRequest <- copyRequestRepository.get(copyRequestId).asOptionT
-        copy <- copyRepository.get(copyRequest.copyId).asOptionT
+        copy <- copiesRepository.get(copyRequest.copyId).asOptionT
       } yield copy.offeredBy
 
       maybeCopyOwnerId.value.map {

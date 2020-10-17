@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, Copy
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name, PageSize}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, CopyRequestPagination, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopiesRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
@@ -468,7 +468,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
 
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
-    val copyRepository = new TestCopyRepository
+    val copiesRepository = new TestCopiesRepository
     val copyRequestRepository = new TestCopyRequestRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
@@ -482,9 +482,9 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       CopyRequestService.create(
         authorizationByActiveStatus = instances.byActiveStatus(userRepository),
         authorizationByRequestIssuer = authorization.byRequestIssuer(copyRequestRepository),
-        authorizationByCopyOwner = authorization.byCopyOwner(copyRequestRepository, copyRepository),
+        authorizationByCopyOwner = authorization.byCopyOwner(copyRequestRepository, copiesRepository),
         copyRequestRepository,
-        copyRepository,
+        copiesRepository,
         catsIdTransactor
       )
 
@@ -520,19 +520,19 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
       status = initialNextRequestStatus
     )
 
-    copyRepository.create(copy)
+    copiesRepository.create(copy)
 
     def copyIsAvailable(id: Id[Copy]): Boolean =
-      copyRepository.get(id).exists(_.status == CopyStatus.Available)
+      copiesRepository.get(id).exists(_.status == CopyStatus.Available)
 
     def copyIsReserved(id: Id[Copy]): Boolean =
-      copyRepository.get(id).exists(_.status == CopyStatus.Reserved)
+      copiesRepository.get(id).exists(_.status == CopyStatus.Reserved)
 
     def copyIsSwapped(id: Id[Copy]): Boolean =
-      copyRepository.get(id).exists(_.status == CopyStatus.Swapped)
+      copiesRepository.get(id).exists(_.status == CopyStatus.Swapped)
 
     def copyIsNotUpdated(id: Id[Copy], initialCopyStatus: CopyStatus): Boolean =
-      copyRepository.get(id).exists(_.status == initialCopyStatus)
+      copiesRepository.get(id).exists(_.status == initialCopyStatus)
 
     def requestIsAccepted(id: Id[CopyRequest]): Boolean =
       copyRequestRepository.get(id).exists(_.status.isAccepted)
@@ -562,7 +562,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     override val initialRequestStatus = RequestStatus.accepted(now)
     override val initialCopyStatus = CopyStatus.reserved
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
-    copyRepository.updateStatus(copyId, initialCopyStatus)
+    copiesRepository.updateStatus(copyId, initialCopyStatus)
   }
 
   trait WithNextRequestOnWaitingList extends WithRequestAccepted {
@@ -574,7 +574,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     override val initialRequestStatus = RequestStatus.onWaitingList(now)
     override val initialCopyStatus = CopyStatus.reserved
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
-    copyRepository.updateStatus(copyId, initialCopyStatus)
+    copiesRepository.updateStatus(copyId, initialCopyStatus)
   }
 
   trait WithRequestRejected extends WithRequestPending {
@@ -591,7 +591,7 @@ class CopyRequestServiceSpec extends AnyWordSpec with Matchers {
     override val initialRequestStatus = RequestStatus.fulfilled(now)
     override val initialCopyStatus = CopyStatus.Swapped
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
-    copyRepository.updateStatus(copyId, initialCopyStatus)
+    copiesRepository.updateStatus(copyId, initialCopyStatus)
   }
 
 }

@@ -9,7 +9,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, Copy
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name, PageSize}
 import com.github.sophiecollard.bookswap.domain.transaction.{CopyRequest, RequestStatus}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopyRepository
+import com.github.sophiecollard.bookswap.fixtures.repositories.inventory.TestCopiesRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.transaction.TestCopyRequestRepository
 import com.github.sophiecollard.bookswap.fixtures.repositories.user.TestUserRepository
 import com.github.sophiecollard.bookswap.services.error.ServiceError.ResourceNotFound
@@ -104,7 +104,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
           assert(returnedCopy.condition == copy.condition)
           assert(returnedCopy.status == initialCopyStatus)
 
-          withSome(copyRepository.get(returnedCopy.id)) { createdCopy =>
+          withSome(copiesRepository.get(returnedCopy.id)) { createdCopy =>
             assert(createdCopy.isbn == copy.isbn)
             assert(createdCopy.offeredBy == copyOwnerId)
             assert(createdCopy.condition == copy.condition)
@@ -187,7 +187,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   trait WithBasicSetup {
     val userRepository = new TestUserRepository
-    val copyRepository = new TestCopyRepository
+    val copiesRepository = new TestCopiesRepository
     val copyRequestRepository = new TestCopyRequestRepository
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
@@ -200,8 +200,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     val copyService: CopyService[CatsId] =
       CopyService.create(
         authorizationByActiveStatus = byActiveStatus(userRepository),
-        authorizationByCopyOwner = authorization.byCopyOwner(copyRepository),
-        copyRepository,
+        authorizationByCopyOwner = authorization.byCopyOwner(copiesRepository),
+        copiesRepository,
         copyRequestRepository,
         catsIdTransactor
       )
@@ -230,41 +230,41 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     )
 
     def copyConditionIs(id: Id[Copy], condition: Condition): Boolean =
-      copyRepository.get(id).exists(_.condition == condition)
+      copiesRepository.get(id).exists(_.condition == condition)
 
     def copyIsWithdrawn(id: Id[Copy]): Boolean =
-      copyRepository.get(id).exists(_.status == CopyStatus.Withdrawn)
+      copiesRepository.get(id).exists(_.status == CopyStatus.Withdrawn)
 
     def copyStatusIsNotUpdated(id: Id[Copy], initialCopyStatus: CopyStatus): Boolean =
-      copyRepository.get(id).exists(_.status == initialCopyStatus)
+      copiesRepository.get(id).exists(_.status == initialCopyStatus)
 
     def requestIsRejected(id: Id[CopyRequest]): Boolean =
       copyRequestRepository.get(id).exists(_.status.isRejected)
   }
 
   trait WithCopyAvailable extends WithBasicSetup {
-    copyRepository.create(copy)
+    copiesRepository.create(copy)
     copyRequestRepository.create(copyRequest)
   }
 
   trait WithCopyReserved extends WithCopyAvailable {
     override val initialCopyStatus = CopyStatus.reserved
     override val initialRequestStatus = RequestStatus.accepted(now)
-    copyRepository.updateStatus(copyId, initialCopyStatus)
+    copiesRepository.updateStatus(copyId, initialCopyStatus)
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
   }
 
   trait WithCopySwapped extends WithCopyAvailable {
     override val initialCopyStatus = CopyStatus.swapped
     override val initialRequestStatus = RequestStatus.fulfilled(now)
-    copyRepository.updateStatus(copyId, initialCopyStatus)
+    copiesRepository.updateStatus(copyId, initialCopyStatus)
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
   }
 
   trait WithCopyWithdrawn extends WithCopyAvailable {
     override val initialCopyStatus = CopyStatus.withdrawn
     override val initialRequestStatus = RequestStatus.rejected(now)
-    copyRepository.updateStatus(copyId, initialCopyStatus)
+    copiesRepository.updateStatus(copyId, initialCopyStatus)
     copyRequestRepository.updateStatus(requestId, initialRequestStatus)
   }
 
