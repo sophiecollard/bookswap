@@ -17,17 +17,17 @@ import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class EditionServiceSpec extends AnyWordSpec with Matchers {
+class EditionsServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'get' method" should {
     "return an edition" in new WithEdition {
-      withRight(editionService.get(isbn)) {
+      withRight(editionsService.get(isbn)) {
         _ shouldBe edition
       }
     }
 
     "return an error if the edition is not found" in new WithEdition {
-      withLeft(editionService.get(otherIsbn)) {
+      withLeft(editionsService.get(otherIsbn)) {
         _ shouldBe EditionNotFound(otherIsbn)
       }
     }
@@ -35,17 +35,17 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'create' method" should {
     "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
-      withFailedAuthorization(editionService.create(edition)(unverifiedUserId)) {
+      withFailedAuthorization(editionsService.create(edition)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
-      withFailedAuthorization(editionService.create(edition)(bannedUserId)) {
+      withFailedAuthorization(editionsService.create(edition)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
       }
     }
 
     "create a new edition" in new WithBasicSetup {
-      withSuccessfulAuthorization(editionService.create(edition)(activeUserId)) {
+      withSuccessfulAuthorization(editionsService.create(edition)(activeUserId)) {
         withNoServiceError { returnedEdition =>
           returnedEdition shouldBe edition
 
@@ -57,7 +57,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return an error if the isbn already exists" in new WithEdition {
-      withSuccessfulAuthorization(editionService.create(edition)(activeUserId)) {
+      withSuccessfulAuthorization(editionsService.create(edition)(activeUserId)) {
         withServiceError {
           _ shouldBe EditionAlreadyExists(isbn)
         }
@@ -67,11 +67,11 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'update' method" should {
     "deny any request from a user that is pending verification or banned" in new WithBasicSetup {
-      withFailedAuthorization(editionService.update(isbn, detailsUpdate)(unverifiedUserId)) {
+      withFailedAuthorization(editionsService.update(isbn, detailsUpdate)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
-      withFailedAuthorization(editionService.update(isbn, detailsUpdate)(bannedUserId)) {
+      withFailedAuthorization(editionsService.update(isbn, detailsUpdate)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
       }
     }
@@ -79,7 +79,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     "update an edition" in new WithEdition {
       val expectedResult = Edition(isbn = edition.isbn, details = edition.details.applyUpdate(detailsUpdate))
 
-      withSuccessfulAuthorization(editionService.update(isbn, detailsUpdate)(activeUserId)) {
+      withSuccessfulAuthorization(editionsService.update(isbn, detailsUpdate)(activeUserId)) {
         withNoServiceError { returnedEdition =>
           assert(returnedEdition.title == expectedResult.title)
           assert(returnedEdition.authorIds == expectedResult.authorIds)
@@ -97,7 +97,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return an error if the edition is not found" in new WithEdition {
-      withSuccessfulAuthorization(editionService.update(otherIsbn, detailsUpdate)(activeUserId)) {
+      withSuccessfulAuthorization(editionsService.update(otherIsbn, detailsUpdate)(activeUserId)) {
         withServiceError {
           _ shouldBe EditionNotFound(otherIsbn)
         }
@@ -107,13 +107,13 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'delete' method" should {
     "deny any request from a user that is not an admin" in new WithEdition {
-      withFailedAuthorization(editionService.delete(isbn)(activeUserId)) {
+      withFailedAuthorization(editionsService.delete(isbn)(activeUserId)) {
         _ shouldBe NotAnAdmin(activeUserId)
       }
     }
 
     "delete an edition" in new WithEdition {
-      withSuccessfulAuthorization(editionService.delete(isbn)(adminUserId)) {
+      withSuccessfulAuthorization(editionsService.delete(isbn)(adminUserId)) {
         withNoServiceError { _ =>
           withNone(editionsRepository.get(isbn)) {
             succeed
@@ -123,7 +123,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return an error if the edition is not found" in new WithEdition {
-      withSuccessfulAuthorization(editionService.delete(otherIsbn)(adminUserId)) {
+      withSuccessfulAuthorization(editionsService.delete(otherIsbn)(adminUserId)) {
         withServiceError {
           _ shouldBe EditionNotFound(otherIsbn)
         }
@@ -131,7 +131,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return an error if the edition still has copies with status 'available'" in new WithCopyAvailable {
-      withSuccessfulAuthorization(editionService.delete(isbn)(adminUserId)) {
+      withSuccessfulAuthorization(editionsService.delete(isbn)(adminUserId)) {
         withServiceError {
           _ shouldBe EditionStillHasCopiesOnOffer(isbn)
         }
@@ -139,7 +139,7 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return an error if the edition still has copies with status 'reserved'" in new WithCopyReserved {
-      withSuccessfulAuthorization(editionService.delete(isbn)(adminUserId)) {
+      withSuccessfulAuthorization(editionsService.delete(isbn)(adminUserId)) {
         withServiceError {
           _ shouldBe EditionStillHasCopiesOnOffer(isbn)
         }
@@ -159,8 +159,8 @@ class EditionServiceSpec extends AnyWordSpec with Matchers {
         f
     }
 
-    val editionService: EditionService[CatsId] =
-      EditionService.create(
+    val editionsService: EditionsService[CatsId] =
+      EditionsService.create(
         authorizationByActiveStatus = instances.byActiveStatus(usersRepository),
         authorizationByAdminStatus = instances.byAdminStatus(usersRepository),
         editionsRepository,

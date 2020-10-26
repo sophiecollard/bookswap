@@ -13,7 +13,7 @@ import com.github.sophiecollard.bookswap.services.error.ServiceError._
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
 
-trait EditionService[F[_]] {
+trait EditionsService[F[_]] {
 
   /** Fetches an Edition */
   def get(isbn: ISBN): F[ServiceErrorOr[Edition]]
@@ -29,7 +29,7 @@ trait EditionService[F[_]] {
 
 }
 
-object EditionService {
+object EditionsService {
 
   def create[F[_], G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
@@ -39,7 +39,7 @@ object EditionService {
     transactor: G ~> F
   )(
     implicit zoneId: ZoneId // TODO pass from configuration
-  ): EditionService[F] = new EditionService[F] {
+  ): EditionsService[F] = new EditionsService[F] {
     override def get(isbn: ISBN): F[ServiceErrorOr[Edition]] =
       getWithoutTransaction(isbn)
         .transact(transactor)

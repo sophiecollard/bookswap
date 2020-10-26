@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain.inventory.{Edition, EditionDetailsUpdate}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.services.inventory.edition.EditionService
+import com.github.sophiecollard.bookswap.services.inventory.edition.EditionsService
 import org.http4s.{AuthedRoutes, HttpRoutes}
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
@@ -18,7 +18,7 @@ object EditionsEndpoints {
 
   def create[F[_]](
     authMiddleware: AuthMiddleware[F, Id[User]],
-    service: EditionService[F]
+    service: EditionsService[F]
   )(
     implicit F: Sync[F]
   ): HttpRoutes[F] = {
