@@ -21,8 +21,11 @@ trait UsersService[F[_]] {
   /** Invoked by an Admin to update a User's status */
   def updateStatus(id: Id[User], status: UserStatus)(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
 
-  /** Invoked by a User to delete itself */
-  def delete(userId: Id[User]): F[ServiceErrorOr[Unit]]
+  /** Invoked by a User to request its deletion - Updates the user's status to pendingDeletion */
+  def softDelete(id: Id[User]): F[ServiceErrorOr[Unit]]
+
+  /** Invoked by an Admin to delete a user - Deletes the user record from the databse */
+  def hardDelete(id: Id[User])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]]
 
 }
 
@@ -69,19 +72,32 @@ object UsersService {
         result.value.transact(transactor)
       }
 
-    // TODO withdraw all copies and cancel all copy requests by that user
-    override def delete(userId: Id[User]): F[ServiceErrorOr[Unit]] = {
+    override def softDelete(id: Id[User]): F[ServiceErrorOr[Unit]] = {
       val result = for {
-        _ <- getWithoutTransaction(userId).asEitherT
+        _ <- getWithoutTransaction(id).asEitherT
         _ <- usersRepository
-          .delete(userId)
+          .updateStatus(id, UserStatus.PendingDeletion)
           .ifTrue(())
-          .orElse[ServiceError](FailedToDeleteResource("User", userId))
+          .orElse[ServiceError](FailedToDeleteResource("User", id))
           .asEitherT
       } yield ()
 
       result.value.transact(transactor)
     }
+
+    override def hardDelete(id: Id[User])(userId: Id[User]): F[WithAuthorizationByAdminStatus[ServiceErrorOr[Unit]]] =
+      authorizationByAdminStatus.authorize(userId) {
+        val result = for {
+          _ <- getWithoutTransaction(id).asEitherT
+          _ <- usersRepository
+            .delete(id)
+            .ifTrue(())
+            .orElse[ServiceError](FailedToDeleteResource("User", id))
+            .asEitherT
+        } yield ()
+
+        result.value.transact(transactor)
+      }
 
     private def getWithoutTransaction(id: Id[User]): G[ServiceErrorOr[User]] =
       usersRepository
