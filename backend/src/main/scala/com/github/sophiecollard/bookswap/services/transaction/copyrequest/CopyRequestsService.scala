@@ -20,9 +20,9 @@ import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state.
 import com.github.sophiecollard.bookswap.services.transaction.copyrequest.state._
 import com.github.sophiecollard.bookswap.syntax._
 
-trait CopyRequestService[F[_]] {
+trait CopyRequestsService[F[_]] {
 
-  import CopyRequestService.RequestAndCopy
+  import CopyRequestsService.RequestAndCopy
 
   /** Fetches a CopyRequest */
   def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]]
@@ -50,7 +50,7 @@ trait CopyRequestService[F[_]] {
 
 }
 
-object CopyRequestService {
+object CopyRequestsService {
 
   type RequestAndCopy = (CopyRequest, Copy)
   type Statuses = (RequestStatus, CopyStatus)
@@ -66,8 +66,8 @@ object CopyRequestService {
     transactor: G ~> F
   )(
     implicit zoneId: ZoneId // TODO Include in config object
-  ): CopyRequestService[F] = {
-    new CopyRequestService[F] {
+  ): CopyRequestsService[F] = {
+    new CopyRequestsService[F] {
       override def get(id: Id[CopyRequest]): F[ServiceErrorOr[CopyRequest]] =
         copyRequestsRepository
           .get(id)
