@@ -15,17 +15,17 @@ import com.github.sophiecollard.bookswap.specsyntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class AuthorServiceSpec extends AnyWordSpec with Matchers {
+class AuthorsServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'get' method" should {
     "return an author" in new WithAuthor {
-      withRight(authorService.get(authorId)) {
+      withRight(authorsService.get(authorId)) {
         _ shouldBe author
       }
     }
 
     "return an error if the author is not found" in new WithAuthor {
-      withLeft(authorService.get(otherAuthorId)) {
+      withLeft(authorsService.get(otherAuthorId)) {
         _ shouldBe ResourceNotFound("Author", otherAuthorId)
       }
     }
@@ -38,17 +38,17 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
       usersRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
       usersRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
 
-      withFailedAuthorization(authorService.create(authorName)(unverifiedUserId)) {
+      withFailedAuthorization(authorsService.create(authorName)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
-      withFailedAuthorization(authorService.create(authorName)(bannedUserId)) {
+      withFailedAuthorization(authorsService.create(authorName)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
       }
     }
 
     "create a new author" in new WithBasicSetup {
-      withSuccessfulAuthorization(authorService.create(authorName)(activeUserId)) {
+      withSuccessfulAuthorization(authorsService.create(authorName)(activeUserId)) {
         withNoServiceError { returnedAuthor =>
           returnedAuthor.name shouldBe authorName
 
@@ -62,13 +62,13 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'delete' method" should {
     "deny any request from a user that is not an admin" in new WithAuthor {
-      withFailedAuthorization(authorService.delete(authorId)(activeUserId)) {
+      withFailedAuthorization(authorsService.delete(authorId)(activeUserId)) {
         _ shouldBe NotAnAdmin(activeUserId)
       }
     }
 
     "delete an author" in new WithAuthor {
-      withSuccessfulAuthorization(authorService.delete(authorId)(adminUserId)) {
+      withSuccessfulAuthorization(authorsService.delete(authorId)(adminUserId)) {
         withNoServiceError { _ =>
           withNone(authorsRepository.get(authorId)) {
             succeed
@@ -78,7 +78,7 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return an error if the author is not found" in new WithAuthor {
-      withSuccessfulAuthorization(authorService.delete(otherAuthorId)(adminUserId)) {
+      withSuccessfulAuthorization(authorsService.delete(otherAuthorId)(adminUserId)) {
         withServiceError {
           _ shouldBe ResourceNotFound("Author", otherAuthorId)
         }
@@ -97,8 +97,8 @@ class AuthorServiceSpec extends AnyWordSpec with Matchers {
         f
     }
 
-    val authorService: AuthorService[CatsId] =
-      AuthorService.create(
+    val authorsService: AuthorsService[CatsId] =
+      AuthorsService.create(
         authorizationByActiveStatus = instances.byActiveStatus(usersRepository),
         authorizationByAdminStatus = instances.byAdminStatus(usersRepository),
         authorsRepository,

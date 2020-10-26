@@ -11,7 +11,7 @@ import com.github.sophiecollard.bookswap.services.error.ServiceError.{FailedToCr
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
 import com.github.sophiecollard.bookswap.syntax._
 
-trait AuthorService[F[_]] {
+trait AuthorsService[F[_]] {
 
   /** Fetches an Author */
   def get(id: Id[Author]): F[ServiceErrorOr[Author]]
@@ -24,15 +24,15 @@ trait AuthorService[F[_]] {
 
 }
 
-object AuthorService {
+object AuthorsService {
 
   def create[F[_], G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
     authorizationByAdminStatus: AuthorizationService[F, Id[User], ByAdminStatus],
     repository: AuthorsRepository[G],
     transactor: G ~> F
-  ): AuthorService[F] =
-    new AuthorService[F] {
+  ): AuthorsService[F] =
+    new AuthorsService[F] {
       override def get(id: Id[Author]): F[ServiceErrorOr[Author]] =
         getWithoutTransaction(id)
           .transact(transactor)
