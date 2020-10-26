@@ -18,11 +18,11 @@ import com.github.sophiecollard.bookswap.syntax.JavaTimeSyntax.now
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class CopyServiceSpec extends AnyWordSpec with Matchers {
+class CopiesServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'get' method" should {
     "return a copy" in new WithCopyAvailable {
-      withRight(copyService.get(copyId)) {
+      withRight(copiesService.get(copyId)) {
         _ shouldBe copy
       }
     }
@@ -30,7 +30,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     "return an error if not found" in new WithCopyAvailable {
       val otherCopyId = Id.generate[Copy]
 
-      withLeft(copyService.get(otherCopyId)) {
+      withLeft(copiesService.get(otherCopyId)) {
         _ shouldBe ResourceNotFound("Copy", otherCopyId)
       }
     }
@@ -39,44 +39,44 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
   "The 'listForEdition' method" should {
     "return a list of copies" in new WithCopyAvailable {
       val pagination = CopyPagination.default
-      copyService.listForEdition(copy.isbn, pagination) shouldBe List(copy)
+      copiesService.listForEdition(copy.isbn, pagination) shouldBe List(copy)
     }
 
     "not return copies with status 'swapped'" in new WithCopySwapped {
       val pagination = CopyPagination.default
-      copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
+      copiesService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
 
     "not return copies with status 'withdrawn'" in new WithCopyWithdrawn {
       val pagination = CopyPagination.default
-      copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
+      copiesService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
 
     "return an empty list if the page size is zero" in new WithCopyAvailable {
       val pagination = CopyPagination(LocalDateTime.now, PageSize.nil)
-      copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
+      copiesService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
 
     "return an empty list if no copy matches the pagination condition(s)" in new WithCopyAvailable {
       val pagination = CopyPagination(copy.offeredOn.minusDays(1), PageSize.ten)
-      copyService.listForEdition(copy.isbn, pagination) shouldBe Nil
+      copiesService.listForEdition(copy.isbn, pagination) shouldBe Nil
     }
   }
 
   "The 'listForOwner' method" should {
     "return a list of copies" in new WithCopyAvailable {
       val pagination = CopyPagination.default
-      copyService.listForOwner(copyOwnerId, pagination) shouldBe List(copy)
+      copiesService.listForOwner(copyOwnerId, pagination) shouldBe List(copy)
     }
 
     "return an empty list if the page size is zero" in new WithCopyAvailable {
       val pagination = CopyPagination(LocalDateTime.now, PageSize.nil)
-      copyService.listForOwner(copyOwnerId, pagination) shouldBe Nil
+      copiesService.listForOwner(copyOwnerId, pagination) shouldBe Nil
     }
 
     "return an empty list if no copy matches the pagination condition(s)" in new WithCopyAvailable {
       val pagination = CopyPagination(copy.offeredOn.minusDays(1), PageSize.ten)
-      copyService.listForOwner(copyOwnerId, pagination) shouldBe Nil
+      copiesService.listForOwner(copyOwnerId, pagination) shouldBe Nil
     }
   }
 
@@ -87,17 +87,17 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
       usersRepository.create(User(id = unverifiedUserId, name = Name("UnverifiedUser"), status = UserStatus.PendingVerification))
       usersRepository.create(User(id = bannedUserId, name = Name("BannedUser"), status = UserStatus.Banned))
 
-      withFailedAuthorization(copyService.create(copy.isbn, copy.condition)(unverifiedUserId)) {
+      withFailedAuthorization(copiesService.create(copy.isbn, copy.condition)(unverifiedUserId)) {
         _ shouldBe NotAnActiveUser(unverifiedUserId)
       }
 
-      withFailedAuthorization(copyService.create(copy.isbn, copy.condition)(bannedUserId)) {
+      withFailedAuthorization(copiesService.create(copy.isbn, copy.condition)(bannedUserId)) {
         _ shouldBe NotAnActiveUser(bannedUserId)
       }
     }
 
     "create a new request" in new WithBasicSetup {
-      withSuccessfulAuthorization(copyService.create(copy.isbn, copy.condition)(copyOwnerId)) {
+      withSuccessfulAuthorization(copiesService.create(copy.isbn, copy.condition)(copyOwnerId)) {
         withRight(_) { returnedCopy =>
           assert(returnedCopy.isbn == copy.isbn)
           assert(returnedCopy.offeredBy == copyOwnerId)
@@ -117,7 +117,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'updateCondition' method" should {
     "deny any request from a user other than the copy owner" in new WithCopyAvailable {
-      withFailedAuthorization(copyService.updateCondition(copyId, Condition.SomeSignsOfUse)(requestIssuerId)) { error =>
+      withFailedAuthorization(copiesService.updateCondition(copyId, Condition.SomeSignsOfUse)(requestIssuerId)) { error =>
         error shouldBe NotTheCopyOwner(requestIssuerId, copyId)
       }
     }
@@ -125,7 +125,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     "update the condition of a copy" in new WithCopyAvailable {
       val condition = Condition.SomeSignsOfUse
 
-      withSuccessfulAuthorization(copyService.updateCondition(copyId, condition)(copyOwnerId)) {
+      withSuccessfulAuthorization(copiesService.updateCondition(copyId, condition)(copyOwnerId)) {
         withNoServiceError { returnedCopy =>
           returnedCopy.condition shouldBe condition
         }
@@ -137,13 +137,13 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
 
   "The 'withdraw' method" should {
     "deny any request from a user other than the copy owner" in new WithCopyAvailable {
-      withFailedAuthorization(copyService.withdraw(copyId)(requestIssuerId)) { error =>
+      withFailedAuthorization(copiesService.withdraw(copyId)(requestIssuerId)) { error =>
         error shouldBe NotTheCopyOwner(requestIssuerId, copyId)
       }
     }
 
     "withdraw an available copy and reject all pending requests" in new WithCopyAvailable {
-      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+      withSuccessfulAuthorization(copiesService.withdraw(copyId)(copyOwnerId)) {
         withNoServiceError { returnedCopy =>
           returnedCopy.status shouldBe CopyStatus.withdrawn
         }
@@ -154,7 +154,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "withdraw a reserved copy and reject all open requests" in new WithCopyReserved {
-      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+      withSuccessfulAuthorization(copiesService.withdraw(copyId)(copyOwnerId)) {
         withNoServiceError { returnedCopy =>
           returnedCopy.status shouldBe CopyStatus.withdrawn
         }
@@ -165,7 +165,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "not update a swapped copy" in new WithCopySwapped {
-      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+      withSuccessfulAuthorization(copiesService.withdraw(copyId)(copyOwnerId)) {
         withNoServiceError { returnedCopy =>
           returnedCopy.status shouldBe initialCopyStatus
         }
@@ -175,7 +175,7 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "not update a withdrawn copy" in new WithCopyWithdrawn {
-      withSuccessfulAuthorization(copyService.withdraw(copyId)(copyOwnerId)) {
+      withSuccessfulAuthorization(copiesService.withdraw(copyId)(copyOwnerId)) {
         withNoServiceError { returnedCopy =>
           returnedCopy.status shouldBe initialCopyStatus
         }
@@ -197,8 +197,8 @@ class CopyServiceSpec extends AnyWordSpec with Matchers {
         f
     }
 
-    val copyService: CopyService[CatsId] =
-      CopyService.create(
+    val copiesService: CopiesService[CatsId] =
+      CopiesService.create(
         authorizationByActiveStatus = byActiveStatus(usersRepository),
         authorizationByCopyOwner = authorization.byCopyOwner(copiesRepository),
         copiesRepository,

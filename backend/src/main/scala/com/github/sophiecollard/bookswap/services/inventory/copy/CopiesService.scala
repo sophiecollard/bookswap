@@ -19,7 +19,7 @@ import com.github.sophiecollard.bookswap.services.inventory.copy.state.StateUpda
 import com.github.sophiecollard.bookswap.services.inventory.copy.state.{InitialState, StateMachine, StateUpdate}
 import com.github.sophiecollard.bookswap.syntax._
 
-trait CopyService[F[_]] {
+trait CopiesService[F[_]] {
 
   /** Fetches a Copy */
   def get(id: Id[Copy]): F[ServiceErrorOr[Copy]]
@@ -41,7 +41,7 @@ trait CopyService[F[_]] {
 
 }
 
-object CopyService {
+object CopiesService {
 
   def create[F[_]: Monad, G[_]: Monad](
     authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
@@ -51,7 +51,7 @@ object CopyService {
     transactor: G ~> F
   )(
     implicit zoneId: ZoneId
-  ): CopyService[F] = new CopyService[F] {
+  ): CopiesService[F] = new CopiesService[F] {
     override def get(id: Id[Copy]): F[ServiceErrorOr[Copy]] =
       getWithoutTransaction(id)
         .transact(transactor)
