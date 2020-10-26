@@ -219,7 +219,8 @@ CREATE TYPE user_status AS ENUM (
   'pending_verification',
   'active',
   'admin',
-  'banned'
+  'banned',
+  'pending_deletion'
 );
 
 CREATE TABLE users (
