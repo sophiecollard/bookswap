@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 object Server {
 
   def create[F[_]: ConcurrentEffect](
+    usersEndpoints: HttpRoutes[F],
     authorEndpoints: HttpRoutes[F],
     editionEndpoints: HttpRoutes[F],
     copyEndpoints: HttpRoutes[F],
@@ -25,6 +26,7 @@ object Server {
 
     val router: Http[F, F] = Router[F](
       "/live" -> HttpRoutes.of[F] { case GET -> Root => Ok() },
+      "/v1/users" -> usersEndpoints,
       "/v1/authors" -> authorEndpoints,
       "/v1/editions" -> editionEndpoints,
       "/v1/copies" -> copyEndpoints,

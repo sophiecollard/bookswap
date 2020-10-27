@@ -5,6 +5,7 @@ import java.util.UUID
 import com.github.sophiecollard.bookswap.domain.inventory.{Author, Copy, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.{Id, PageSize}
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequest
+import com.github.sophiecollard.bookswap.domain.user.User
 import org.http4s.dsl.impl.{OptionalQueryParamDecoderMatcher, QueryParamDecoderMatcher}
 
 import scala.util.Try
@@ -34,6 +35,13 @@ trait http4s {
     def unapply(string: String): Option[Id[CopyRequest]] =
       Try(UUID.fromString(string))
         .map(Id.apply[CopyRequest])
+        .toOption
+  }
+
+  object UserIdVar {
+    def unapply(string: String): Option[Id[User]] =
+      Try(UUID.fromString(string))
+        .map(Id.apply[User])
         .toOption
   }
 
