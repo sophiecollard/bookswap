@@ -12,7 +12,7 @@ object ISBN {
 
   object ThirteenDigits {
     def apply(value: String): Option[ThirteenDigits] = {
-      val thirteenDigitsPattern = "^[0-9]{13}$".r
+      val thirteenDigitsPattern = "^(978|979)[0-9]{10}$".r
       thirteenDigitsPattern findFirstIn value map {
         new ThirteenDigits(_) {}
       }
