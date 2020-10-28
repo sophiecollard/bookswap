@@ -4,16 +4,34 @@ import doobie.util.meta.Meta
 import io.circe.{Decoder, Encoder}
 import org.http4s.{ParseFailure, QueryParamDecoder}
 
-sealed abstract case class ISBN(value: String)
+sealed trait ISBN { def value: String }
 
 object ISBN {
 
-  def apply(value: String): Option[ISBN] = {
-    val isbnPattern = "^[0-9]{13}$".r
-    isbnPattern findFirstIn value map {
-      new ISBN(_) {}
+  sealed abstract case class ThirteenDigits(value: String) extends ISBN
+
+  object ThirteenDigits {
+    def apply(value: String): Option[ThirteenDigits] = {
+      val thirteenDigitsPattern = "^[0-9]{13}$".r
+      thirteenDigitsPattern findFirstIn value map {
+        new ThirteenDigits(_) {}
+      }
     }
   }
+
+  sealed abstract case class TenDigits(value: String) extends ISBN
+
+  object TenDigits {
+    def apply(value: String): Option[TenDigits] = {
+      val tenDigitsPattern = "^[0-9]{10}$".r
+      tenDigitsPattern findFirstIn value map {
+        new TenDigits(_) {}
+      }
+    }
+  }
+
+  def apply(value: String): Option[ISBN] =
+    ThirteenDigits(value) orElse TenDigits(value)
 
   def unsafeApply(value: String): ISBN =
     apply(value).get
