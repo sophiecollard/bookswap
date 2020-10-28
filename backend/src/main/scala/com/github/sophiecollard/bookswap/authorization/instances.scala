@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError.
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
 import com.github.sophiecollard.bookswap.domain.user.UserStatus.{Active, Admin}
-import com.github.sophiecollard.bookswap.repositories.user.UsersRepository
+import com.github.sophiecollard.bookswap.repositories.users.UsersRepository
 
 object instances {
 

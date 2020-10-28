@@ -10,7 +10,7 @@ import com.github.sophiecollard.bookswap.domain.inventory.Copy
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.transaction.CopyRequestPagination
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.services.transaction.copyrequest.CopyRequestsService
+import com.github.sophiecollard.bookswap.services.transaction.copyrequests.CopyRequestsService
 import org.http4s.{AuthedRoutes, HttpRoutes}
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._

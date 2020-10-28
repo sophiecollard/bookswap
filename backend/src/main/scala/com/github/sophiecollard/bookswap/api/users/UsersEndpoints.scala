@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.api.instances.http4s.UserIdVar
 import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.{User, UserStatus}
-import com.github.sophiecollard.bookswap.services.user.UsersService
+import com.github.sophiecollard.bookswap.services.users.UsersService
 import org.http4s.{AuthedRoutes, HttpRoutes}
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._

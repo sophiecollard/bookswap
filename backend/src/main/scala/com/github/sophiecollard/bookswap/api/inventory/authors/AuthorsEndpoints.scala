@@ -7,7 +7,7 @@ import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.domain.inventory.Author
 import com.github.sophiecollard.bookswap.domain.shared.{Id, Name}
 import com.github.sophiecollard.bookswap.domain.user.User
-import com.github.sophiecollard.bookswap.services.inventory.author.AuthorsService
+import com.github.sophiecollard.bookswap.services.inventory.authors.AuthorsService
 import org.http4s.{AuthedRoutes, HttpRoutes}
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
