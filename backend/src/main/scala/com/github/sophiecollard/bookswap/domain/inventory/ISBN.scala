@@ -1,37 +1,98 @@
 package com.github.sophiecollard.bookswap.domain.inventory
 
+import cats.syntax.option._
 import doobie.util.meta.Meta
 import io.circe.{Decoder, Encoder}
 import org.http4s.{ParseFailure, QueryParamDecoder}
 
-sealed trait ISBN { def value: String }
+sealed trait ISBN {
+
+  def value: String
+
+  def prefix: ISBN.EAN
+
+  final def language: Option[Language] =
+    prefix match {
+      case ISBN.EAN.`978` => languageFor978Prefix
+      case ISBN.EAN.`979` => languageFor979Prefix
+    }
+
+  private def withoutPrefix: ISBN.TenDigit =
+    this match {
+      case ISBN.ThirteenDigit(_, tenDigit) => tenDigit
+      case tenDigit: ISBN.TenDigit         => tenDigit
+    }
+
+  private def languageFor978Prefix: Option[Language] =
+    withoutPrefix.value.toList match {
+      case '0' :: _ => Language.English.some
+      case '1' :: _ => Language.English.some
+      case '2' :: _ => Language.French.some
+      case '3' :: _ => Language.German.some
+      case '4' :: _ => Language.Japanese.some
+      case '5' :: _ => Language.Russian.some
+      case '7' :: _ => Language.Chinese.some
+      case _        => None
+    }
+
+  private def languageFor979Prefix: Option[Language] =
+    withoutPrefix.value.toList match {
+      case '8' :: _        => Language.English.some
+      case '1' :: '0' :: _ => Language.French.some
+      case '1' :: '1' :: _ => Language.Korean.some
+      case '1' :: '2' :: _ => Language.Italian.some
+      case _               => None
+    }
+
+}
 
 object ISBN {
 
-  sealed abstract case class ThirteenDigits(value: String) extends ISBN
+  sealed abstract class EAN(val value: String)
 
-  object ThirteenDigits {
-    def apply(value: String): Option[ThirteenDigits] = {
-      val thirteenDigitsPattern = "^(978|979)[0-9]{10}$".r
-      thirteenDigitsPattern findFirstIn value map {
-        new ThirteenDigits(_) {}
+  object EAN {
+
+    case object `978` extends EAN("978")
+    case object `979` extends EAN("979")
+
+    def apply(value: String): Option[EAN] =
+      value match {
+        case "978" => `978`.some
+        case "979" => `979`.some
+        case _     => None
       }
-    }
+
   }
 
-  sealed abstract case class TenDigits(value: String) extends ISBN
+  sealed abstract case class ThirteenDigit(prefix: EAN, tenDigit: TenDigit) extends ISBN {
+    override def value: String =
+      s"${prefix.value}${tenDigit.value}"
+  }
 
-  object TenDigits {
-    def apply(value: String): Option[TenDigits] = {
-      val tenDigitsPattern = "^[0-9]{10}$".r
-      tenDigitsPattern findFirstIn value map {
-        new TenDigits(_) {}
+  object ThirteenDigit {
+    def apply(value: String): Option[ThirteenDigit] =
+      for {
+        prefix <- EAN(value.take(3))
+        remainder <- TenDigit(value.drop(3))
+      } yield new ThirteenDigit(prefix, remainder) {}
+  }
+
+  sealed abstract case class TenDigit(value: String) extends ISBN {
+    override def prefix: EAN =
+      EAN.`978`
+  }
+
+  object TenDigit {
+    def apply(value: String): Option[TenDigit] = {
+      val tenDigitPattern = "^[0-9]{10}$".r
+      tenDigitPattern findFirstIn value map {
+        new TenDigit(_) {}
       }
     }
   }
 
   def apply(value: String): Option[ISBN] =
-    ThirteenDigits(value) orElse TenDigits(value)
+    ThirteenDigit(value) orElse TenDigit(value)
 
   def unsafeApply(value: String): ISBN =
     apply(value).get

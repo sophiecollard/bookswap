@@ -28,4 +28,17 @@ class ISBNSpec extends AnyWordSpec with Matchers {
 
   }
 
+  "The 'language' method" should {
+
+    "return the language a book was most probably published in" in {
+      ISBN("0-330-28498-3").get.language shouldBe Some(Language.English)
+      ISBN("1-58182-008-9").get.language shouldBe Some(Language.English)
+      ISBN("978-2290155158").get.language shouldBe Some(Language.French)
+      ISBN("3-7965-1900-8").get.language shouldBe Some(Language.German)
+      ISBN("4-19-830127-1").get.language shouldBe Some(Language.Japanese)
+      ISBN("5-85270-001-0").get.language shouldBe Some(Language.Russian)
+    }
+
+  }
+
 }
