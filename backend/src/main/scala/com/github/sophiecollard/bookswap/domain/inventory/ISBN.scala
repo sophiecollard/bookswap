@@ -7,10 +7,18 @@ import org.http4s.{ParseFailure, QueryParamDecoder}
 
 sealed trait ISBN {
 
+  /** Returns the ISBN as a String stripped of dashes and spaces */
   def value: String
 
+  /** Returns the 3-digit prefix of a 13-digit ISBN. Defaults to '978' for 10-digit ISBNs. */
   def prefix: ISBN.EAN
 
+  /**
+    * Returns the language a book was most probably published in based on the ISBN group.
+    *
+    * Note that ISBN groups are typically assigned to countries or geographical areas. As such, they only provide an
+    * educated guess as to which language a book was published in.
+    */
   final def language: Option[Language] =
     prefix match {
       case ISBN.EAN.`978` => languageFor978Prefix
