@@ -78,11 +78,13 @@ object ISBN {
   }
 
   object ThirteenDigit {
-    def apply(value: String): Option[ThirteenDigit] =
+    def apply(value: String): Option[ThirteenDigit] = {
+      val strippedValue = value.replaceAll("(-| )", "")
       for {
-        prefix <- EAN(value.take(3))
-        remainder <- TenDigit(value.drop(3))
+        prefix <- EAN(strippedValue.take(3))
+        remainder <- TenDigit(strippedValue.drop(3))
       } yield new ThirteenDigit(prefix, remainder) {}
+    }
   }
 
   sealed abstract case class TenDigit(value: String) extends ISBN {
@@ -93,7 +95,8 @@ object ISBN {
   object TenDigit {
     def apply(value: String): Option[TenDigit] = {
       val tenDigitPattern = "^[0-9]{10}$".r
-      tenDigitPattern findFirstIn value map {
+      val strippedValue = value.replaceAll("(-| )", "")
+      tenDigitPattern findFirstIn strippedValue map {
         new TenDigit(_) {}
       }
     }

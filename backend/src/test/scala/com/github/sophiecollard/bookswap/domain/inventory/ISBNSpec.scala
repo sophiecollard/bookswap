@@ -7,19 +7,28 @@ class ISBNSpec extends AnyWordSpec with Matchers {
 
   "The 'apply' method" should {
 
-    "succeed on a 13-digit input starting with '978' or '979'" in {
+    "parse a 13-digit ISBN" in {
       val maybeISBN = ISBN("9781784875435")
       assert(maybeISBN.isDefined)
       assert(maybeISBN.get.value == "9781784875435")
     }
 
-    "succeed on a 10-digit input" in {
+    "parse a 10-digit ISBN" in {
       val maybeISBN = ISBN("8175257660")
       assert(maybeISBN.isDefined)
       assert(maybeISBN.get.value == "8175257660")
     }
 
-    "fail on any other input" in {
+    "strip dashes and spaces before attempting to parse an ISBN" in {
+      val maybe13DigitISBN = ISBN("978 2290155158")
+      assert(maybe13DigitISBN.isDefined)
+      assert(maybe13DigitISBN.get.value == "9782290155158")
+      val maybe10DigitISBN = ISBN("2-226-05257-7")
+      assert(maybe10DigitISBN.isDefined)
+      assert(maybe10DigitISBN.get.value == "2226052577")
+    }
+
+    "fail to parse any other input" in {
       assert(ISBN("ABC1234567").isEmpty) // contains non-digit characters
       assert(ISBN("9771784875435").isEmpty) // does not start with '978' or '979'
       assert(ISBN("978178487543").isEmpty) // 12-digit
