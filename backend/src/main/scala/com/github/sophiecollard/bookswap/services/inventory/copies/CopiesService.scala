@@ -44,8 +44,8 @@ trait CopiesService[F[_]] {
 object CopiesService {
 
   def create[F[_]: Monad, G[_]: Monad](
-    authorizationByActiveStatus: AuthorizationService[F, Id[User], ByActiveStatus],
-    authorizationByCopyOwner: AuthorizationService[F, (Id[User], Id[Copy]), ByCopyOwner],
+    authorizationByActiveStatus: AuthorizationService[G, Id[User], ByActiveStatus],
+    authorizationByCopyOwner: AuthorizationService[G, (Id[User], Id[Copy]), ByCopyOwner],
     copiesRepository: CopiesRepository[G],
     copyRequestsRepository: CopyRequestsRepository[G],
     transactor: G ~> F
@@ -81,8 +81,7 @@ object CopiesService {
           .create(copy)
           .ifTrue(copy)
           .orElse[ServiceError](FailedToCreateResource("Copy", copy.id))
-          .transact(transactor)
-      }
+      }.transact(transactor)
 
     override def updateCondition(id: Id[Copy], condition: Condition)(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
       authorizationByCopyOwner.authorize((userId, id)) {
@@ -95,8 +94,8 @@ object CopiesService {
             .asEitherT
         } yield updatedCopy
 
-        result.value.transact(transactor)
-      }
+        result.value
+      }.transact(transactor)
 
     override def withdraw(id: Id[Copy])(userId: Id[User]): F[WithAuthorizationByCopyOwner[ServiceErrorOr[Copy]]] =
       authorizationByCopyOwner.authorize((userId, id)) {
@@ -108,8 +107,8 @@ object CopiesService {
           updatedCopy = copy.copy(status = updatedStatus)
         } yield updatedCopy
 
-        result.value.transact(transactor)
-      }
+        result.value
+      }.transact(transactor)
 
     private def getWithoutTransaction(id: Id[Copy]): G[ServiceErrorOr[Copy]] =
       copiesRepository
