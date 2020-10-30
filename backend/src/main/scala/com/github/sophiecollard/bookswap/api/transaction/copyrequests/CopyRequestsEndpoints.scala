@@ -32,6 +32,22 @@ object CopyRequestsEndpoints {
     // TODO Pass in configuration
     implicit val zoneId = ZoneId.of("UTC")
 
+    val publicRoutes:HttpRoutes[F] = HttpRoutes.of[F] {
+      case GET -> Root :? CopyIdQueryParamMatcher(copyId) +&
+        RequestedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyRequestPagination.fromOptionalValues(maybePageOffset, maybePageSize)
+        service.listForCopy(copyId, pagination).flatMap { copyRequests =>
+          Ok(copyRequests.map(_.convertTo[CopyRequestResponseBody]))
+        }
+      case GET -> Root / CopyRequestIdVar(copyRequestId) =>
+        service.get(copyRequestId).flatMap {
+          withNoServiceError { copyRequest =>
+            Ok(copyRequest.convertTo[CopyRequestResponseBody])
+          }
+        }
+    }
+
     val privateRoutes: AuthedRoutes[Id[User], F] = AuthedRoutes.of[Id[User], F] {
       case GET -> Root :? RequestedOnOrBeforeParamMatcher(maybePageOffset) +&
         PageSizeParamMatcher(maybePageSize) as userId =>
@@ -77,23 +93,7 @@ object CopyRequestsEndpoints {
         }
     }
 
-    val publicRoutes:HttpRoutes[F] = HttpRoutes.of[F] {
-      case GET -> Root :? CopyIdQueryParamMatcher(copyId) +&
-        RequestedOnOrBeforeParamMatcher(maybePageOffset) +&
-        PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyRequestPagination.fromOptionalValues(maybePageOffset, maybePageSize)
-        service.listForCopy(copyId, pagination).flatMap { copyRequests =>
-          Ok(copyRequests.map(_.convertTo[CopyRequestResponseBody]))
-        }
-      case GET -> Root / CopyRequestIdVar(copyRequestId) =>
-        service.get(copyRequestId).flatMap {
-          withNoServiceError { copyRequest =>
-            Ok(copyRequest.convertTo[CopyRequestResponseBody])
-          }
-        }
-    }
-
-    authMiddleware(privateRoutes) <+> publicRoutes
+    publicRoutes <+> authMiddleware(privateRoutes)
   }
 
   object RequestedOnOrBeforeParamMatcher extends OptionalQueryParamDecoderMatcher[LocalDateTime]("page_offset")

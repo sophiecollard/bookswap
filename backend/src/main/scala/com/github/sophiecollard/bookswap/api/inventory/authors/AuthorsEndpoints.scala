@@ -25,6 +25,15 @@ object AuthorsEndpoints {
     object dsl extends Http4sDsl[F]
     import dsl._
 
+    val publicRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
+      case GET -> Root / AuthorIdVar(authorId) =>
+        service.get(authorId).flatMap {
+          withNoServiceError { author =>
+            Ok(author.convertTo[AuthorResponseBody])
+          }
+        }
+    }
+
     val privateRoutes: AuthedRoutes[Id[User], F] = AuthedRoutes.of[Id[User], F] {
       case authedRequest @ POST -> Root as userId =>
         authedRequest.req.withBodyAs[CreateAuthorRequestBody] { requestBody =>
@@ -47,16 +56,7 @@ object AuthorsEndpoints {
         }
     }
 
-    val publicRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
-      case GET -> Root / AuthorIdVar(authorId) =>
-        service.get(authorId).flatMap {
-          withNoServiceError { author =>
-            Ok(author.convertTo[AuthorResponseBody])
-          }
-        }
-    }
-
-    authMiddleware(privateRoutes) <+> publicRoutes
+    publicRoutes <+> authMiddleware(privateRoutes)
   }
 
 }

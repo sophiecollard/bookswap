@@ -31,6 +31,29 @@ object CopiesEndpoints {
     // TODO Pass in configuration
     implicit val zoneId = ZoneId.of("UTC")
 
+    val publicRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
+      case GET -> Root :? ISBNQueryParamMatcher(isbn) +&
+        OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyPagination.fromOptionalValues(maybePageOffset, maybePageSize)
+        service.listForEdition(isbn, pagination).flatMap { copies =>
+          Ok(copies.map(_.convertTo[CopyResponseBody]))
+        }
+      case GET -> Root :? OfferedByQueryParamMatcher(offeredBy) +&
+        OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
+        PageSizeParamMatcher(maybePageSize) =>
+        val pagination = CopyPagination.fromOptionalValues(maybePageOffset, maybePageSize)
+        service.listForOwner(offeredBy, pagination).flatMap { copies =>
+          Ok(copies.map(_.convertTo[CopyResponseBody]))
+        }
+      case GET -> Root / CopyIdVar(copyId) =>
+        service.get(copyId).flatMap {
+          withNoServiceError { copy =>
+            Ok(copy.convertTo[CopyResponseBody])
+          }
+        }
+    }
+
     val privateRoutes: AuthedRoutes[Id[User], F] = AuthedRoutes.of[Id[User], F] {
       case authedReq @ POST -> Root as userId =>
         authedReq.req.withBodyAs[CreateCopyRequestBody] { requestBody =>
@@ -64,30 +87,7 @@ object CopiesEndpoints {
         }
     }
 
-    val publicRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
-      case GET -> Root :? ISBNQueryParamMatcher(isbn) +&
-        OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
-        PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyPagination.fromOptionalValues(maybePageOffset, maybePageSize)
-        service.listForEdition(isbn, pagination).flatMap { copies =>
-          Ok(copies.map(_.convertTo[CopyResponseBody]))
-        }
-      case GET -> Root :? OfferedByQueryParamMatcher(offeredBy) +&
-        OfferedOnOrBeforeParamMatcher(maybePageOffset) +&
-        PageSizeParamMatcher(maybePageSize) =>
-        val pagination = CopyPagination.fromOptionalValues(maybePageOffset, maybePageSize)
-        service.listForOwner(offeredBy, pagination).flatMap { copies =>
-          Ok(copies.map(_.convertTo[CopyResponseBody]))
-        }
-      case GET -> Root / CopyIdVar(copyId) =>
-        service.get(copyId).flatMap {
-          withNoServiceError { copy =>
-            Ok(copy.convertTo[CopyResponseBody])
-          }
-        }
-    }
-
-    authMiddleware(privateRoutes) <+> publicRoutes
+    publicRoutes <+> authMiddleware(privateRoutes)
   }
 
   object OfferedOnOrBeforeParamMatcher extends OptionalQueryParamDecoderMatcher[LocalDateTime]("page_offset")

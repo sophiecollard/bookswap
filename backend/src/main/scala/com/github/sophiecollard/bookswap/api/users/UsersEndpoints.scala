@@ -24,6 +24,24 @@ object UsersEndpoints {
     object dsl extends Http4sDsl[F]
     import dsl._
 
+    val publicRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
+      case req @ POST -> Root =>
+        req.withBodyAs[CreateUserRequestBody] { requestBody =>
+          val name = requestBody.convertTo[Name[User]]
+          service.create(name).flatMap {
+            withNoServiceError { user =>
+              Created(user.convertTo[UserResponseBody])
+            }
+          }
+        }
+      case GET -> Root / UserIdVar(id) =>
+        service.get(id).flatMap {
+          withNoServiceError { user =>
+            Ok(user.convertTo[UserResponseBody])
+          }
+        }
+    }
+
     val privateRoutes: AuthedRoutes[Id[User], F] = AuthedRoutes.of[Id[User], F] {
       case authedRequest @ PUT -> Root / UserIdVar(id) as userId =>
         authedRequest.req.withBodyAs[UpdateUserRequestBody] { requestBody =>
@@ -52,25 +70,7 @@ object UsersEndpoints {
         }
     }
 
-    val publicRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
-      case req @ POST -> Root =>
-        req.withBodyAs[CreateUserRequestBody] { requestBody =>
-          val name = requestBody.convertTo[Name[User]]
-          service.create(name).flatMap {
-            withNoServiceError { user =>
-              Created(user.convertTo[UserResponseBody])
-            }
-          }
-        }
-      case GET -> Root / UserIdVar(id) =>
-        service.get(id).flatMap {
-          withNoServiceError { user =>
-            Ok(user.convertTo[UserResponseBody])
-          }
-        }
-    }
-
-    authMiddleware(privateRoutes) <+> publicRoutes
+    publicRoutes <+> authMiddleware(privateRoutes)
   }
 
 }
