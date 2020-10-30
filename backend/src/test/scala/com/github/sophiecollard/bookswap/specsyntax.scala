@@ -1,11 +1,21 @@
 package com.github.sophiecollard.bookswap
 
+import cats.effect.IO
 import com.github.sophiecollard.bookswap.authorization.WithAuthorization
 import com.github.sophiecollard.bookswap.authorization.error.AuthorizationError
 import com.github.sophiecollard.bookswap.services.error.{ServiceError, ServiceErrorOr}
+import org.http4s.{EntityDecoder, Response}
 import org.scalatest.Assertion
 
 object specsyntax {
+
+  implicit class ResponseSyntax(val response: Response[IO]) extends AnyVal {
+    def withBodyAs[B](ifBody: B => Assertion)(implicit ev: EntityDecoder[IO, B]): Assertion = {
+      val decodeResult = response.attemptAs[B].value.unsafeRunSync()
+      assert(decodeResult.isRight)
+      ifBody(decodeResult.toOption.get)
+    }
+  }
 
   def withFailedAuthorization[R, Tag](
     authorizationResult: WithAuthorization[R, Tag]
