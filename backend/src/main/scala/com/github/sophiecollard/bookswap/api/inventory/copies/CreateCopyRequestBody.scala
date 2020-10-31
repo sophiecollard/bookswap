@@ -2,7 +2,7 @@ package com.github.sophiecollard.bookswap.api.inventory.copies
 
 import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, ISBN}
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto
 
 final case class CreateCopyRequestBody(
@@ -11,6 +11,9 @@ final case class CreateCopyRequestBody(
 )
 
 object CreateCopyRequestBody {
+
+  implicit val encoder: Encoder[CreateCopyRequestBody] =
+    semiauto.deriveEncoder
 
   implicit val decoder: Decoder[CreateCopyRequestBody] =
     semiauto.deriveDecoder

@@ -6,7 +6,7 @@ import com.github.sophiecollard.bookswap.api.Converter
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
 import com.github.sophiecollard.bookswap.domain.shared.Id
 import com.github.sophiecollard.bookswap.domain.user.User
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto
 
 final case class CopyResponseBody(
@@ -22,6 +22,9 @@ object CopyResponseBody {
 
   implicit val encoder: Encoder[CopyResponseBody] =
     semiauto.deriveEncoder
+
+  implicit val decoder: Decoder[CopyResponseBody] =
+    semiauto.deriveDecoder
 
   implicit val converter: Converter[Copy, CopyResponseBody] =
     Converter.instance { copy =>
