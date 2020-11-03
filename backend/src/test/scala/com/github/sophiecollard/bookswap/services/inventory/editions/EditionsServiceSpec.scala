@@ -148,9 +148,9 @@ class EditionsServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val usersRepository = new TestUsersRepository
-    val editionsRepository = new TestEditionsRepository
-    val copiesRepository = new TestCopiesRepository
+    val usersRepository = TestUsersRepository.create[CatsId]
+    val editionsRepository = TestEditionsRepository.create[CatsId]
+    val copiesRepository = TestCopiesRepository.create[CatsId]
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 

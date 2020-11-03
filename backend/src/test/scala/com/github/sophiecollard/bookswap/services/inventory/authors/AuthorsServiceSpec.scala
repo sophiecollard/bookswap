@@ -87,8 +87,8 @@ class AuthorsServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val usersRepository = new TestUsersRepository
-    val authorsRepository = new TestAuthorsRepository
+    val usersRepository = TestUsersRepository.create[CatsId]
+    val authorsRepository = TestAuthorsRepository.create[CatsId]
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 

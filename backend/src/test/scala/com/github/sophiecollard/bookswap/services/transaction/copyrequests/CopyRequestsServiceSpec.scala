@@ -467,9 +467,9 @@ class CopyRequestsServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val usersRepository = new TestUsersRepository
-    val copiesRepository = new TestCopiesRepository
-    val copyRequestsRepository = new TestCopyRequestsRepository
+    val usersRepository = TestUsersRepository.create[CatsId]
+    val copiesRepository = TestCopiesRepository.create[CatsId]
+    val copyRequestsRepository = TestCopyRequestsRepository.create[CatsId]
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 

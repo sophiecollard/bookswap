@@ -120,7 +120,7 @@ class UsersServiceSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val usersRepository = new TestUsersRepository
+    val usersRepository = TestUsersRepository.create[CatsId]
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
