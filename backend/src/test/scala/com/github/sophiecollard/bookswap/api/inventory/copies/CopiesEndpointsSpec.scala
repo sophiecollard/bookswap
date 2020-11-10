@@ -4,8 +4,7 @@ import java.time.{LocalDateTime, ZoneId}
 
 import cats.data.{Kleisli, OptionT}
 import cats.effect.IO
-import cats.implicits._
-import cats.{~>, Id => CatsId}
+import cats.~>
 import com.github.sophiecollard.bookswap.api.syntax._
 import com.github.sophiecollard.bookswap.authorization.instances.byActiveStatus
 import com.github.sophiecollard.bookswap.domain.inventory.{Condition, Copy, CopyStatus, ISBN}
@@ -68,7 +67,7 @@ class CopiesEndpointsSpec extends AnyWordSpec with Matchers {
   }
 
   "The 'POST /' endpoint" should {
-    "create a new copy" in new WithBasicSetup {
+    "create a new copy" in new WithTestData {
       private val uri = uri"/"
       private val requestBody = CreateCopyRequestBody(isbn, initialCopyCondition)
       private val entity = circeEntityEncoder[IO, CreateCopyRequestBody].toEntity(requestBody)
@@ -116,19 +115,19 @@ class CopiesEndpointsSpec extends AnyWordSpec with Matchers {
   }
 
   trait WithBasicSetup {
-    val usersRepository = TestUsersRepository.create[CatsId]
-    val copiesRepository = TestCopiesRepository.create[CatsId]
-    val copyRequestsRepository = TestCopyRequestsRepository.create[CatsId]
+    val usersRepository = TestUsersRepository.create[IO]
+    val copiesRepository = TestCopiesRepository.create[IO]
+    val copyRequestsRepository = TestCopyRequestsRepository.create[IO]
 
     implicit val zoneId: ZoneId = ZoneId.of("UTC")
 
-    private val transactor = new ~>[CatsId, IO] {
-      override def apply[T](f : CatsId[T]): IO[T] =
-        f.pure[IO]
+    private val transactor = new ~>[IO, IO] {
+      override def apply[T](f : IO[T]): IO[T] =
+        f
     }
 
     val copiesService: CopiesService[IO] =
-      CopiesService.create(
+      CopiesService.create[IO, IO](
         authorizationByActiveStatus = byActiveStatus(usersRepository),
         authorizationByCopyOwner = authorization.byCopyOwner(copiesRepository),
         copiesRepository,
@@ -136,11 +135,38 @@ class CopiesEndpointsSpec extends AnyWordSpec with Matchers {
         transactor
       )
 
-    val (copyOwnerId, copyId) = (Id.generate[User], Id.generate[Copy])
-    val (isbn, initialCopyCondition, initialCopyStatus) = (ISBN.unsafeApply("9781784875435"), Condition.BrandNew, CopyStatus.available)
-
+    val copyOwnerId = Id.generate[User]
     private val copyOwner = User(copyOwnerId, Name("CopyOwner"), UserStatus.Active)
     usersRepository.create(copyOwner)
+
+    val authenticationService: AuthenticationService[IO] =
+      TestAuthenticationService.create(copyOwnerId)
+
+    val authMiddleware: AuthMiddleware[IO, Id[User]] =
+      AuthMiddleware(
+        Kleisli.liftF {
+          val dummyEmail = Email.unsafeApply("miguel.de.cervantes@bookswap.org")
+          val dummyPassword = new Password("123456")
+          OptionT(authenticationService.authenticate(dummyEmail, dummyPassword))
+        }
+      )
+
+    val copiesEndpoints: HttpRoutes[IO] =
+      CopiesEndpoints.create(authMiddleware, copiesService)
+
+    def copyExists(id: Id[Copy]): Boolean =
+      copiesRepository.get(id).unsafeRunSync().isDefined
+
+    def copyConditionIs(id: Id[Copy], condition: Condition): Boolean =
+      copiesRepository.get(id).unsafeRunSync().exists(_.condition == condition)
+
+    def copyIsWithdrawn(id: Id[Copy]): Boolean =
+      copiesRepository.get(id).unsafeRunSync().exists(_.status == CopyStatus.Withdrawn)
+  }
+
+  trait WithTestData extends WithBasicSetup {
+    val (copyId, isbn) = (Id.generate[Copy], ISBN.unsafeApply("9781784875435"))
+    val (initialCopyCondition, initialCopyStatus) = (Condition.BrandNew, CopyStatus.available)
 
     val copy = Copy(
       id = copyId,
@@ -152,36 +178,9 @@ class CopiesEndpointsSpec extends AnyWordSpec with Matchers {
     )
 
     val copyResponseBody = copy.convertTo[CopyResponseBody]
-
-    val authenticationService: AuthenticationService[IO] =
-      TestAuthenticationService.create(copyOwnerId)
-
-    val authMiddleware: AuthMiddleware[IO, Id[User]] =
-      AuthMiddleware(
-        Kleisli.liftF {
-          val dummyEmail = Email.unsafeApply("miguel.de.cervantes@bookswap.com")
-          val dummyPassword = new Password("12345")
-          OptionT(authenticationService.authenticate(dummyEmail, dummyPassword))
-        }
-      )
-
-    val copiesEndpoints: HttpRoutes[IO] =
-      CopiesEndpoints.create(
-        authMiddleware,
-        copiesService
-      )
-
-    def copyExists(id: Id[Copy]): Boolean =
-      copiesRepository.get(id).isDefined
-
-    def copyConditionIs(id: Id[Copy], condition: Condition): Boolean =
-      copiesRepository.get(id).exists(_.condition == condition)
-
-    def copyIsWithdrawn(id: Id[Copy]): Boolean =
-      copiesRepository.get(id).exists(_.status == CopyStatus.Withdrawn)
   }
 
-  trait WithCopy extends WithBasicSetup {
+  trait WithCopy extends WithTestData {
     copiesRepository.create(copy)
   }
 
